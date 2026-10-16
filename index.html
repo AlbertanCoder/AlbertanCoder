@@ -225,7 +225,7 @@ h4 { font-family: var(--sans); font-size: var(--step-0); font-weight: 700; line-
 /* ── Sections ───────────────────────────────────────── */
 .chapter { padding-block: clamp(3.2rem, 7vw, 6.5rem); border-top: 1px solid var(--rule); }
 .chapter-head { display: flex; flex-direction: column; gap: 0.85rem; }
-.section-grid { display: grid; gap: clamp(1.5rem, 3vw, 2.5rem); }
+.section-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(1.5rem, 3vw, 2.5rem); }
 
 /* ── Hero ───────────────────────────────────────────── */
 /* The hero band is deliberately dark in both themes: a night sky over a Rockies-to-prairie skyline. */
@@ -432,13 +432,13 @@ h4 { font-family: var(--sans); font-size: var(--step-0); font-weight: 700; line-
 }
 
 /* ── Tables ─────────────────────────────────────────── */
-details.more { border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); }
+details.more { min-width: 0; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); }
 details.more > summary { cursor: pointer; list-style: none; padding: 0.8rem 1rem; font-weight: 700; display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
 details.more > summary::-webkit-details-marker { display: none; }
 details.more > summary::after { content: "+"; font-family: var(--label); font-weight: 400; color: var(--muted); font-size: 1.2rem; line-height: 1; }
 details.more[open] > summary::after { content: "−"; }
 details.more > summary span { font-weight: 400; color: var(--muted); font-size: var(--step--1); }
-.table-wrap { overflow-x: auto; border-top: 1px solid var(--rule); -webkit-overflow-scrolling: touch; }
+.table-wrap { max-width: 100%; overflow-x: auto; border-top: 1px solid var(--rule); -webkit-overflow-scrolling: touch; }
 table { border-collapse: collapse; width: 100%; font-size: var(--step--1); font-variant-numeric: tabular-nums; }
 th, td { padding: 0.55rem 0.75rem; text-align: left; border-bottom: 1px solid var(--rule); vertical-align: top; }
 th { font-weight: 700; color: var(--ink-2); background: var(--surface); white-space: nowrap; }
@@ -448,6 +448,7 @@ th button::after { content: "↕"; color: var(--rule-strong); font-size: 0.85em;
 th[aria-sort="ascending"] button::after { content: "↑"; color: var(--ink-2); }
 th[aria-sort="descending"] button::after { content: "↓"; color: var(--ink-2); }
 td.num, th.num { text-align: right; white-space: nowrap; }
+@media (max-width: 900px) { #poll-table td:nth-child(2) { min-width: 12rem; } }
 td .tag { display: inline-block; font-family: var(--label); font-size: var(--step--2); padding: 0.05rem 0.4rem; border-radius: 3px; background: var(--chip); color: var(--ink-2); white-space: nowrap; }
 tr:last-child td { border-bottom: 0; }
 
@@ -1408,17 +1409,22 @@ tr:last-child td { border-bottom: 0; }
       if (q.note) tip.appendChild(h("div", "tt-meta", q.note));
     });
     tip.hidden = false;
+    // Place the tip within the chart box, then shift it into the coordinates of its
+    // containing block (the sticky wrapper), which starts above the chart's title and legend.
     var hostRect = this.svgHost.getBoundingClientRect();
-    var scale = hostRect.width / this.W;
+    var svgRect = this.svg.getBoundingClientRect();
+    var scale = svgRect.width / this.W;
+    var ox = svgRect.left - hostRect.left, oy = svgRect.top - hostRect.top;
     var tw = tip.offsetWidth, th = tip.offsetHeight;
-    var left = x * scale + 14;
-    if (left + tw > hostRect.width - 6) left = x * scale - tw - 14;
+    var left = ox + x * scale + 14;
+    if (left + tw > hostRect.width - 6) left = ox + x * scale - tw - 14;
     if (left < 6) left = Math.max(6, (hostRect.width - tw) / 2);
     var ys = [this.vals(p).sq, this.vals(p).ch].filter(function (v) { return v != null; }).map(this.Y);
-    var top = (Math.min.apply(null, ys) * scale) - th / 2;
+    var top = oy + Math.min.apply(null, ys) * scale - th / 2;
     top = Math.max(6, Math.min(top, hostRect.height - th - 6));
-    tip.style.left = left + "px";
-    tip.style.top = top + "px";
+    var par = tip.offsetParent || this.svgHost, parRect = par.getBoundingClientRect();
+    tip.style.left = (hostRect.left - parRect.left - par.clientLeft + left) + "px";
+    tip.style.top = (hostRect.top - parRect.top - par.clientTop + top) + "px";
     var live = $("[data-live]", this.root);
     if (live) live.textContent = p.pollster + ", " + fmtRange(parseDate(p.start), parseDate(p.end)) + ": " + lab.sq + " " + pct(this.vals(p).sq) + ", " + lab.ch + " " + pct(this.vals(p).ch);
   };
