@@ -1,0 +1,879 @@
+<title>Fridge Camera Business Analysis</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="A researched business case for a camera kit that makes any fridge smart: the market, competition, unit economics and a staged plan with go/no-go gates.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400&display=swap">
+<style>
+/* Layout: one reading column inside a 1120px frame; figures and tables break out to the full frame.
+   Look: the inside of a fridge (cool porcelain, cold LED blue) with Canadian food-label details as the signature. */
+:root {
+  --bg: #f2f6f7;
+  --surface: #ffffff;
+  --surface-2: #e9f0f2;
+  --ink: #13202a;
+  --muted: #566773;
+  --rule: #d3dde2;
+  --track: #e4ecef;
+  --cold: #1d6987;
+  --cold-soft: #d8eaf2;
+  --tint: #e6edf0;
+  --tomato: #c23d22;
+  --good: #22764a;
+  --bad: #b03a2e;
+  --focus: #1d6987;
+
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-body: "Newsreader", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d161c;
+    --surface: #14212a;
+    --surface-2: #1a2a34;
+    --ink: #e3ebef;
+    --muted: #9badb8;
+    --rule: #263844;
+    --track: #1f303a;
+    --cold: #7cc1df;
+    --cold-soft: #173543;
+    --tint: #1b2b35;
+    --tomato: #f0775a;
+    --good: #5cc28b;
+    --bad: #f0806f;
+    --focus: #7cc1df;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d161c;
+  --surface: #14212a;
+  --surface-2: #1a2a34;
+  --ink: #e3ebef;
+  --muted: #9badb8;
+  --rule: #263844;
+  --track: #1f303a;
+  --cold: #7cc1df;
+  --cold-soft: #173543;
+  --tint: #1b2b35;
+  --tomato: #f0775a;
+  --good: #5cc28b;
+  --bad: #f0806f;
+  --focus: #7cc1df;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  line-height: 1.6;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+}
+@media (max-width: 600px) { body { font-size: 1.0625rem; } }
+
+a { color: var(--cold); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { text-decoration-thickness: 2px; }
+a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 3px; }
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  margin: 0;
+  text-wrap: balance;
+  letter-spacing: -0.02em;
+}
+h1 { font-size: clamp(2.45rem, 6.6vw, 4.5rem); font-weight: 760; line-height: 1.02; max-width: 17ch; }
+h2 { font-size: clamp(1.6rem, 3.4vw, 2.35rem); font-weight: 720; line-height: 1.1; max-width: 26ch; }
+h3 { font-size: 1.15rem; font-weight: 680; line-height: 1.25; letter-spacing: -0.01em; }
+p { margin: 0; max-width: 68ch; }
+strong { font-weight: 600; }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+h2.eyebrow { max-width: none; line-height: 1.4; }
+.muted { color: var(--muted); }
+.small { font-size: 0.9rem; line-height: 1.5; }
+
+/* ---------- Hero ---------- */
+.hero { display: grid; gap: 28px; padding-bottom: 40px; }
+.hero-top { display: grid; gap: 18px; }
+.dek { font-size: clamp(1.15rem, 2.2vw, 1.4rem); line-height: 1.5; max-width: 60ch; }
+.hero-row { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
+@media (max-width: 760px) { .hero-row { grid-template-columns: minmax(0, 1fr); } }
+
+.verdict {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--cold);
+  border-radius: var(--radius-sm);
+  padding: 18px 20px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+.verdict p { font-size: 1.02rem; line-height: 1.5; }
+
+.label {
+  font-family: var(--font-mono);
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.label-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; border-bottom: 1px dashed var(--rule); padding-bottom: 8px; }
+.label-row:last-of-type { border-bottom: 0; padding-bottom: 0; }
+.label-key { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); line-height: 1.35; }
+.label-val { font-size: 1.3rem; font-weight: 600; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.label-note { font-family: var(--font-body); font-size: 0.85rem; line-height: 1.45; color: var(--muted); }
+
+/* ---------- Key numbers ---------- */
+.stats { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 18px 18px 20px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+.stat-num {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 3.2vw, 2.15rem);
+  font-weight: 760;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat-text { font-size: 0.95rem; line-height: 1.45; color: var(--muted); }
+
+/* ---------- Contents ---------- */
+.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.toc a {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+.toc a:hover { border-color: var(--cold); color: var(--cold); }
+
+/* ---------- Sections ---------- */
+.section { display: grid; gap: 20px; padding-block: 52px 8px; border-top: 1px solid var(--rule); margin-top: 44px; scroll-margin-top: 16px; }
+.section-head { display: grid; gap: 10px; }
+.prose { display: grid; gap: 16px; }
+.prose ul, .prose ol { margin: 0; padding-left: 1.2em; display: grid; gap: 10px; max-width: 68ch; }
+.prose li::marker { color: var(--muted); }
+
+/* ---------- Charts ---------- */
+.chart {
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.chart-title { font-family: var(--font-display); font-weight: 680; font-size: 1.08rem; line-height: 1.3; letter-spacing: -0.01em; }
+.chart-sub { font-size: 0.9rem; color: var(--muted); line-height: 1.45; margin-top: 4px; }
+.chart-note { font-size: 0.86rem; color: var(--muted); line-height: 1.5; max-width: none; }
+
+.bars { display: grid; gap: 14px; }
+.bar-row { display: grid; grid-template-columns: minmax(0, 16rem) minmax(0, 1fr) 7rem; align-items: center; gap: 14px; }
+.bar-label { font-size: 0.95rem; line-height: 1.3; }
+.bar-label em { color: var(--muted); font-style: italic; }
+.bar-track { position: relative; height: 22px; background: var(--track); border-radius: 5px; overflow: hidden; }
+.bar { position: absolute; top: 0; bottom: 0; left: var(--l, 0%); width: var(--w); background: var(--cold); }
+.bar.range { opacity: 0.38; }
+.bar.strong { background: var(--ink); }
+.bar-value { font-family: var(--font-mono); font-size: 0.88rem; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+@media (max-width: 640px) {
+  .bar-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px; }
+  .bar-label { grid-column: 1 / -1; }
+}
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-family: var(--font-mono); font-size: 0.76rem; color: var(--muted); }
+.key { display: inline-flex; align-items: center; gap: 7px; }
+.swatch { width: 14px; height: 10px; border-radius: 2px; background: var(--cold); display: inline-block; }
+.swatch.range { opacity: 0.38; }
+.swatch.good { background: var(--good); }
+.swatch.bad { background: var(--bad); }
+
+/* Diverging profit/loss chart. Scale: -100 to +70 US$, zero at 58.82% */
+.div-chart { --zero: 58.82%; display: grid; gap: 20px; }
+.div-group { display: grid; gap: 8px; }
+.div-head { font-family: var(--font-display); font-weight: 650; font-size: 0.98rem; line-height: 1.3; }
+.div-row { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr) 4.5rem; gap: 12px; align-items: center; }
+.div-name { font-size: 0.9rem; color: var(--muted); line-height: 1.3; }
+.div-track { position: relative; height: 18px; background: var(--track); border-radius: 4px; }
+.div-track::after { content: ""; position: absolute; left: var(--zero); top: -5px; bottom: -5px; width: 2px; margin-left: -1px; background: var(--ink); opacity: 0.55; }
+.div-bar { position: absolute; top: 0; bottom: 0; width: var(--w); }
+.div-bar.neg { right: calc(100% - var(--zero)); background: var(--bad); border-radius: 4px 0 0 4px; }
+.div-bar.pos { left: var(--zero); background: var(--good); border-radius: 0 4px 4px 0; }
+.div-val { font-family: var(--font-mono); font-size: 0.86rem; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.div-axis { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr) 4.5rem; gap: 12px; }
+.ticks { position: relative; height: 18px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+.ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.ticks span:first-child { transform: none; }
+@media (max-width: 640px) {
+  .div-row { grid-template-columns: 5.2rem minmax(0, 1fr) 3.6rem; gap: 8px; }
+  .div-name { font-size: 0.8rem; }
+  .div-axis { display: none; }
+}
+
+/* Range chart for break-even. Scale: 0 to 5,000 kits */
+.range-track { position: relative; height: 22px; border-radius: 5px; background-color: var(--track);
+  background-image: linear-gradient(to right, var(--rule) 1px, transparent 1px); background-size: 20% 100%; }
+.range-bar { position: absolute; top: 3px; bottom: 3px; left: var(--l); width: var(--w); border-radius: 4px; background: var(--cold); }
+.range-bar.target { background: var(--ink); }
+.range-axis { display: grid; grid-template-columns: minmax(0, 16rem) minmax(0, 1fr) 7rem; gap: 14px; }
+@media (max-width: 640px) { .range-axis { display: none; } }
+
+/* ---------- Tables ---------- */
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 0.95rem; line-height: 1.45; }
+caption { text-align: left; padding: 16px 16px 4px; font-family: var(--font-display); font-weight: 680; font-size: 1.02rem; color: var(--ink); }
+th, td { text-align: left; vertical-align: top; padding: 12px 16px; border-bottom: 1px solid var(--rule); }
+thead th { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+tbody th { font-weight: 600; font-family: var(--font-body); }
+tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tag { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--rule); white-space: nowrap; }
+.tag.high { border-color: var(--good); color: var(--good); }
+.tag.low { border-color: var(--bad); color: var(--bad); }
+
+/* ---------- Product figure ---------- */
+.product { display: grid; gap: 18px; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; }
+@media (max-width: 860px) { .product { grid-template-columns: minmax(0, 1fr); } }
+.fridge-fig { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); padding: 16px; display: grid; gap: 12px; }
+.fridge { width: 100%; max-width: 560px; height: auto; display: block; margin: 0 auto; }
+.f-cabinet { fill: none; stroke: var(--ink); stroke-width: 2; }
+.f-compartment { fill: none; stroke: var(--rule); stroke-width: 1.5; }
+.f-shelf { stroke: var(--muted); stroke-width: 1.5; }
+.f-drawer { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.f-phone { fill: var(--tint); stroke: var(--muted); stroke-width: 1.5; }
+.f-bin { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+.f-cone { fill: var(--cold); opacity: 0.11; }
+.f-node rect { fill: var(--cold-soft); stroke: var(--cold); stroke-width: 2; }
+.f-node circle { fill: var(--cold); }
+.f-label { font-family: var(--font-mono); font-size: 17px; fill: var(--ink); }
+.f-label-sm { font-family: var(--font-mono); font-size: 14.5px; fill: var(--ink); }
+.f-label-muted { font-family: var(--font-body); font-size: 16px; fill: var(--muted); }
+@media (max-width: 600px) { .fridge-fig { padding: 10px; } }
+
+.flow { display: grid; gap: 10px; }
+.flow-step { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: 14px 16px; display: grid; gap: 4px; }
+.flow-step.end { border-color: var(--cold); box-shadow: inset 0 0 0 1px var(--cold); }
+.flow-step h3 { font-size: 1.02rem; }
+.flow-step p { font-size: 0.95rem; line-height: 1.45; color: var(--muted); }
+.flow-arrow { justify-self: center; width: 2px; height: 14px; background: var(--muted); position: relative; }
+.flow-arrow::after { content: ""; position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%); border: 5px solid transparent; border-top: 6px solid var(--muted); border-bottom: 0; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.3;
+  border: 1.5px solid var(--tomato); color: var(--ink); background: var(--surface);
+  border-radius: 999px; padding: 6px 14px 6px 8px; max-width: 100%;
+}
+.chip svg { flex: none; }
+
+.callout { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); padding: 20px; display: grid; gap: 12px; }
+.callout h3 { font-size: 1.15rem; }
+
+/* ---------- Funnel strip ---------- */
+.steps { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 760px) { .steps { grid-template-columns: minmax(0, 1fr); } }
+.step { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+.step-num { font-family: var(--font-display); font-weight: 760; font-size: 1.7rem; letter-spacing: -0.02em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.step p { font-size: 0.93rem; line-height: 1.45; color: var(--muted); }
+
+/* ---------- Launch cards ---------- */
+.cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); padding: 18px; display: grid; gap: 8px; align-content: start; }
+.card p { font-size: 0.97rem; line-height: 1.5; }
+
+/* ---------- Stages ---------- */
+.stages { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.stage { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); padding: 18px; display: grid; gap: 12px; align-content: start; }
+.stage.now { border-color: var(--cold); box-shadow: inset 0 0 0 1px var(--cold); }
+.stage-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.stage-badge { font-family: var(--font-mono); font-weight: 600; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.stage.now .stage-badge { color: var(--cold); }
+.here { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bg); background: var(--cold); border-radius: 999px; padding: 2px 9px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { font-family: var(--font-mono); font-size: 0.76rem; font-variant-numeric: tabular-nums; border: 1px solid var(--rule); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+.stage p { font-size: 0.95rem; line-height: 1.48; }
+.gate { border-top: 1px dashed var(--rule); padding-top: 12px; display: grid; gap: 8px; }
+.gate-title { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cold); display: flex; align-items: center; gap: 8px; }
+.gate-title::before { content: ""; width: 9px; height: 9px; background: var(--cold); transform: rotate(45deg); flex: none; }
+.gate ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; font-size: 0.93rem; line-height: 1.45; }
+
+.fallback { background: var(--surface-2); border-radius: var(--radius); padding: 18px 20px; display: grid; gap: 10px; }
+.fallback-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px; align-items: baseline; font-size: 0.97rem; line-height: 1.45; }
+.fallback-row .arrow { font-family: var(--font-mono); color: var(--muted); }
+@media (max-width: 640px) { .fallback-row { grid-template-columns: minmax(0, 1fr); gap: 2px; } .fallback-row .arrow { display: none; } .fallback-row span:last-child { padding-left: 14px; border-left: 2px solid var(--cold); } }
+
+/* ---------- Checklist ---------- */
+.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); }
+.checklist li { display: grid; grid-template-columns: 22px 7.5rem minmax(0, 1fr); gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--rule); align-items: baseline; }
+.checklist li:last-child { border-bottom: 0; }
+.box { width: 16px; height: 16px; border: 1.5px solid var(--muted); border-radius: 4px; transform: translateY(2px); }
+.when { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) { .checklist li { grid-template-columns: 22px minmax(0, 1fr); } .checklist .when { grid-column: 2; } .checklist li > span:last-child { grid-column: 2; } }
+
+/* ---------- Sources ---------- */
+.sources { display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.sources h3 { font-size: 0.98rem; margin-bottom: 8px; }
+.sources ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; font-size: 0.92rem; line-height: 1.45; }
+
+.footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; font-family: var(--font-mono); font-size: 0.76rem; color: var(--muted); letter-spacing: 0.03em; }
+
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+</style>
+<!-- page-body -->
+<main class="page">
+
+  <header class="hero">
+    <div class="hero-top">
+      <p class="eyebrow">Business analysis · Retrofit AI camera for any fridge</p>
+      <h1>Start with software. Make the cameras earn their place.</h1>
+      <p class="dek">A kit of small cameras that turns any fridge into a smart one can be built with parts on sale today. For a solo, part-time founder in Alberta, it fails on money before it fails on technology. Here is the evidence, the numbers, and a cheap way to find out for sure.</p>
+    </div>
+    <div class="hero-row">
+      <div class="verdict">
+        <p class="eyebrow">Verdict</p>
+        <p><strong>Not as a hardware company, and not yet.</strong> Build a phone-first fridge tracker, test hand-built camera kits in ten real homes, and only spend serious money if the measurements and paid deposits pass clear gates. The strongest paying customers are probably families keeping an eye on an aging parent, not grocery savers.</p>
+      </div>
+      <div class="label" aria-label="Analysis dates, written in Canadian food-label format">
+        <div class="label-row"><span class="label-key">Packaged on<br>Emballé le</span><span class="label-val">26 OC 16</span></div>
+        <div class="label-row"><span class="label-key">Best before<br>Meilleur avant</span><span class="label-val">27 AL 16</span></div>
+        <p class="label-note">Facts and prices as of 16 October 2026; recheck after 16 April 2027. Dates are written the way Canadian food labels write them: year, bilingual month code, day.</p>
+      </div>
+    </div>
+  </header>
+
+  <section aria-labelledby="numbers-title" class="prose">
+    <h2 id="numbers-title" class="eyebrow">The numbers that decide it</h2>
+    <div class="stats">
+      <div class="stat"><span class="stat-num">C$80–175</span><span class="stat-text">a year an engaged household might save with a fridge camera, out of about C$1,300 of wasted food</span></div>
+      <div class="stat"><span class="stat-num">4–8</span><span class="stat-text">cameras to cover one fridge's fresh-food side, and tall items still hide the back rows</span></div>
+      <div class="stat"><span class="stat-num">1 day in 5</span><span class="stat-text">how often the list stays exactly right at 90% accuracy per change, the best published result</span></div>
+      <div class="stat"><span class="stat-num">3,600–4,700</span><span class="stat-text">kits to break even with two years of modest founder pay, against 300–1,500 a part-time founder might sell in three years</span></div>
+    </div>
+  </section>
+
+  <nav aria-label="Contents" style="margin-top:28px;">
+    <ul class="toc">
+      <li><a href="#verdict">Verdict</a></li>
+      <li><a href="#problem">The problem</a></li>
+      <li><a href="#product">The product</a></li>
+      <li><a href="#accuracy">Accuracy</a></li>
+      <li><a href="#customers">Customers</a></li>
+      <li><a href="#competition">Competition</a></li>
+      <li><a href="#money">Money</a></li>
+      <li><a href="#launch">Launching</a></li>
+      <li><a href="#plan">The plan</a></li>
+      <li><a href="#start">First 90 days</a></li>
+      <li><a href="#risks">Risks</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ul>
+  </nav>
+
+  <!-- Verdict -->
+  <section class="section" id="verdict" aria-labelledby="verdict-title">
+    <div class="section-head">
+      <p class="eyebrow">Verdict</p>
+      <h2 id="verdict-title">The idea is sound. A camera-first company is not.</h2>
+    </div>
+    <div class="prose">
+      <p>Food recognition, the thing that killed earlier fridge cameras, now costs a fraction of a cent per photo. That makes the timing real. Three other problems stack up against starting with hardware:</p>
+      <ul>
+        <li><strong>The cameras can't see everything.</strong> Four to eight cameras cover the main shelves and drawers, but tall items hide what sits behind them, and door bins and the freezer need other answers.</li>
+        <li><strong>The hardware earns almost nothing.</strong> A four-camera kit costs US$66–134 in parts while buyers compare it with US$20–50 security cameras. When customers come from ads, every pricing scenario loses money or barely breaks even.</li>
+        <li><strong>The big players are already here.</strong> Samsung, LG and GE build camera food tracking into premium fridges, and Google and Amazon already read a phone photo of your fridge for free.</li>
+      </ul>
+      <p>What survives is a software business: a phone-first tracker that keeps an honest list, with a camera kit added once it proves people keep using it.</p>
+    </div>
+  </section>
+
+  <!-- Problem -->
+  <section class="section" id="problem" aria-labelledby="problem-title">
+    <div class="section-head">
+      <p class="eyebrow">The problem</p>
+      <h2 id="problem-title">The problem is real, but smaller than it looks</h2>
+    </div>
+    <div class="prose">
+      <p>A Canadian household throws out about 140 kg of food a year, worth about C$1,300 (<a href="https://lovefoodhatewaste.ca/about/food-waste/">Love Food Hate Waste Canada</a>). The biggest single cause is food not used in time, about 48% of avoidable waste in UK household data (<a href="https://www.wrap.ngo/sites/default/files/2020-12/Household-Food-and-Drink-Waste-in-the-United-Kingdom-2012.pdf">WRAP</a>). A fridge camera can only prevent part of that.</p>
+    </div>
+    <figure class="chart" aria-labelledby="save-title">
+      <div>
+        <div class="chart-title" id="save-title">What a fridge camera could save one household</div>
+        <div class="chart-sub">Canadian dollars per year, drawn to scale</div>
+      </div>
+      <div class="bars">
+        <div class="bar-row">
+          <span class="bar-label">All avoidable food waste</span>
+          <span class="bar-track"><span class="bar strong" style="--w: 100%;"></span></span>
+          <span class="bar-value">C$1,300</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">Forgotten in the fridge until it spoiled <em>(estimate)</em></span>
+          <span class="bar-track"><span class="bar" style="--w: 30%;"></span><span class="bar range" style="--l: 30%; --w: 15%;"></span></span>
+          <span class="bar-value">C$390–585</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">Prevented by an engaged household with a camera <em>(estimate)</em></span>
+          <span class="bar-track"><span class="bar" style="--w: 6.15%;"></span><span class="bar range" style="--l: 6.15%; --w: 7.31%;"></span></span>
+          <span class="bar-value">C$80–175</span>
+        </div>
+      </div>
+      <div class="legend"><span class="key"><span class="swatch"></span>Low end</span><span class="key"><span class="swatch range"></span>Range to high end</span></div>
+      <p class="chart-note">Estimates from the research: 30–45% of avoidable waste is food forgotten in the fridge, and an engaged household prevents 20–30% of that. Bread, tomatoes and apples, the most-wasted items in an audit of 94 Guelph families, often sit outside the fridge where no fridge camera can see them (<a href="https://www.frontiersin.org/journals/nutrition/articles/10.3389/fnut.2019.00143/full">Frontiers in Nutrition</a>).</p>
+    </figure>
+    <div class="prose">
+      <p>So the honest pitch is C$80–175 a year saved, plus convenience. That caps the price: about C$100–200 for a kit and C$0–5 a month.</p>
+    </div>
+  </section>
+
+  <!-- Product -->
+  <section class="section" id="product" aria-labelledby="product-title">
+    <div class="section-head">
+      <p class="eyebrow">The product</p>
+      <h2 id="product-title">A hub outside the fridge, four to five cameras inside</h2>
+    </div>
+    <div class="prose">
+      <p>Food goes in as normal and nobody types anything. A hub plugged in outside the fridge feeds small camera nodes through one flat cable under the door seal. Each node pairs an ESP32-S3 chip with a 5 MP camera, a 150–160° lens, its own light and a small heated window against fog. It photographs the shelves 30–90 seconds after the door closes and uploads only what changed.</p>
+    </div>
+    <div class="product">
+      <figure class="fridge-fig">
+        <svg class="fridge" viewBox="0 0 520 470" role="img" aria-labelledby="fridge-title fridge-desc">
+          <title id="fridge-title">Where the cameras go</title>
+          <desc id="fridge-desc">Front view of a fridge with the door open. Three shelf cameras and two crisper-drawer cameras cover the main compartment. The door bins and the freezer are shaded as areas covered by phone scans.</desc>
+          <rect class="f-cabinet" x="10" y="10" width="500" height="450" rx="18"/>
+          <rect class="f-compartment" x="26" y="26" width="360" height="320" rx="8"/>
+          <polygon class="f-cone" points="206,54 40,100 372,100"/>
+          <polygon class="f-cone" points="206,134 40,180 372,180"/>
+          <polygon class="f-cone" points="206,214 40,260 372,260"/>
+          <line class="f-shelf" x1="26" y1="106" x2="386" y2="106"/>
+          <line class="f-shelf" x1="26" y1="186" x2="386" y2="186"/>
+          <line class="f-shelf" x1="26" y1="266" x2="386" y2="266"/>
+          <g class="f-node"><rect x="186" y="32" width="40" height="22" rx="6"/><circle cx="206" cy="43" r="6"/></g>
+          <g class="f-node"><rect x="186" y="112" width="40" height="22" rx="6"/><circle cx="206" cy="123" r="6"/></g>
+          <g class="f-node"><rect x="186" y="192" width="40" height="22" rx="6"/><circle cx="206" cy="203" r="6"/></g>
+          <text class="f-label" x="236" y="48">Shelf camera</text>
+          <text class="f-label" x="236" y="128">Shelf camera</text>
+          <text class="f-label" x="236" y="208">Shelf camera</text>
+          <rect class="f-drawer" x="34" y="276" width="166" height="62" rx="8"/>
+          <rect class="f-drawer" x="212" y="276" width="166" height="62" rx="8"/>
+          <polygon class="f-cone" points="117,300 46,334 188,334"/>
+          <polygon class="f-cone" points="295,300 224,334 366,334"/>
+          <g class="f-node"><rect x="99" y="281" width="36" height="19" rx="5"/><circle cx="117" cy="290.5" r="5"/></g>
+          <g class="f-node"><rect x="277" y="281" width="36" height="19" rx="5"/><circle cx="295" cy="290.5" r="5"/></g>
+          <text class="f-label-sm" x="117" y="329" text-anchor="middle">Crisper camera</text>
+          <text class="f-label-sm" x="295" y="329" text-anchor="middle">Second, optional</text>
+          <rect class="f-phone" x="398" y="26" width="96" height="320" rx="8"/>
+          <rect class="f-bin" x="410" y="96" width="72" height="40" rx="6"/>
+          <rect class="f-bin" x="410" y="176" width="72" height="40" rx="6"/>
+          <rect class="f-bin" x="410" y="256" width="72" height="40" rx="6"/>
+          <text class="f-label" x="446" y="58" text-anchor="middle">Door</text>
+          <text class="f-label" x="446" y="76" text-anchor="middle">bins</text>
+          <rect class="f-phone" x="26" y="358" width="468" height="86" rx="8"/>
+          <text class="f-label" x="260" y="396" text-anchor="middle">Freezer: phone scans for now</text>
+          <text class="f-label-muted" x="260" y="420" text-anchor="middle">A heated freezer camera can be added later</text>
+        </svg>
+        <div class="legend"><span class="key"><span class="swatch"></span>Seen by a camera</span><span class="key"><span class="swatch" style="background:var(--tint);border:1px solid var(--muted);"></span>Covered by phone scans</span></div>
+      </figure>
+      <div class="flow" aria-label="How a photo becomes a list">
+        <div class="flow-step"><h3>Hub, plugged in outside</h3><p>Powers the cameras and uploads only the views that changed.</p></div>
+        <div class="flow-arrow" aria-hidden="true"></div>
+        <div class="flow-step"><h3>Cloud AI</h3><p>Names each item and compares it with the last photos. Code, not the AI, decides what changed.</p></div>
+        <div class="flow-arrow" aria-hidden="true"></div>
+        <div class="flow-step end"><h3>Your phone</h3><p>What's inside and for how long, what's getting old, and a one-tap question when the AI isn't sure.</p></div>
+        <p class="small muted">Batteries are a poor fit: a node on two lithium AA cells lasts 7–22 months only if it fully cuts camera power between shots, and lithium-ion cells must not be charged at or below freezing. Wired power is the default.</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>How many cameras each fridge type needs</caption>
+        <thead><tr><th scope="col">Fridge type</th><th scope="col">Shelf</th><th scope="col">Crisper</th><th scope="col">Door bins</th><th scope="col">Fresh-food total</th><th scope="col">Freezer</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Top-freezer (~66 cm wide)</th><td class="num">3</td><td class="num">1</td><td>Doorway camera or phone</td><td class="num"><strong>4–5</strong></td><td>+1 heated</td></tr>
+          <tr><th scope="row">Bottom-freezer, single door</th><td class="num">3</td><td class="num">1–2</td><td>Same</td><td class="num"><strong>4–6</strong></td><td>+1 heated</td></tr>
+          <tr><th scope="row">French door (~79 cm wide)</th><td class="num">3–5</td><td class="num">2</td><td>One doorway camera</td><td class="num"><strong>5–8</strong></td><td>+1–2 heated</td></tr>
+          <tr><th scope="row">Side-by-side, fresh-food side</th><td class="num">4</td><td class="num">1–2</td><td>Doorway camera</td><td class="num"><strong>5–7</strong></td><td>+3–4 heated</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p class="small muted">Calculated from lens specifications and published fridge sizes, not measured. A camera looking across a shelf from the front sees the back row at a shallow angle, so any front item taller than about 8–13 cm, like a milk jug, hides what sits behind it. More cameras at the same height cannot fix that. No published source has measured what share of items any multi-camera fridge actually sees, and that is the make-or-break unknown.</p>
+    </div>
+  </section>
+
+  <!-- Accuracy -->
+  <section class="section" id="accuracy" aria-labelledby="accuracy-title">
+    <div class="section-head">
+      <p class="eyebrow">Accuracy</p>
+      <h2 id="accuracy-title">Cameras can keep a useful list, not a perfect one</h2>
+    </div>
+    <div class="prose">
+      <p>The closest real test is a 2026 study of a two-camera vending cooler. Tracking items through the door got 90% of transactions exactly right, up from 64.5% for before-and-after photos, on just seven products (<a href="https://doi.org/10.3390/s26165213">Sensors, 2026</a>). Store coolers claim 98–99%+, but they sell a fixed list of products, add weight sensors and send unsure cases to people.</p>
+    </div>
+    <figure class="chart" aria-labelledby="err-title">
+      <div>
+        <div class="chart-title" id="err-title">Small errors pile up at home</div>
+        <div class="chart-sub">Share of days the list ends exactly right, assuming 15 fridge changes a day</div>
+      </div>
+      <div class="bars">
+        <div class="bar-row"><span class="bar-label">99% right per change</span><span class="bar-track"><span class="bar" style="--w: 86%;"></span></span><span class="bar-value">86% of days</span></div>
+        <div class="bar-row"><span class="bar-label">98% right per change</span><span class="bar-track"><span class="bar" style="--w: 74%;"></span></span><span class="bar-value">74% of days</span></div>
+        <div class="bar-row"><span class="bar-label">95% right per change</span><span class="bar-track"><span class="bar" style="--w: 46%;"></span></span><span class="bar-value">46% of days</span></div>
+        <div class="bar-row"><span class="bar-label">90%, the best published result</span><span class="bar-track"><span class="bar strong" style="--w: 21%;"></span></span><span class="bar-value">21% of days</span></div>
+      </div>
+      <p class="chart-note">A store settles each sale on its own. A fridge list carries every mistake into the next day. No household has been measured; 15 changes a day is an assumption.</p>
+    </figure>
+    <div class="prose">
+      <p>So the system has to reconcile, the way commercial coolers do:</p>
+      <ul>
+        <li>Shelf photos taken after the door closes are the record of what is there.</li>
+        <li>Code, not the AI, decides what changed. A first-seen date never changes, and a moved item keeps its date.</li>
+        <li>The user settles what the cameras can't, with one tap on a cropped photo, two or three times a day at most.</li>
+      </ul>
+      <p>The AI bill stays small if each camera uploads only views that changed: about US$0.35–1.20 per household per month on Claude Haiku 5.5 (<a href="https://platform.claude.com/docs/en/about-claude/pricing">Anthropic pricing</a>).</p>
+    </div>
+    <div class="callout">
+      <h3>The clock, not the camera, flags the tomatoes</h3>
+      <p>Spotting spoilage in photos scores 96–98% in labs on clean single-item images, but nobody has tested it in real fridges, and mould shows up late. Alerts should run on time in the fridge plus typical storage times from USDA FoodKeeper and Health Canada, worded as reminders with their basis shown, never as "safe".</p>
+      <div><span class="chip"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="11.5" r="7" fill="var(--tomato)"/><path d="M10 4.5 L8 2.5 M10 4.5 L12.3 2.8 M10 4.5 L10 7" stroke="var(--good)" stroke-width="1.6" stroke-linecap="round"/></svg>Tomatoes · in the fridge 9 days · check them</span></div>
+    </div>
+  </section>
+
+  <!-- Customers -->
+  <section class="section" id="customers" aria-labelledby="customers-title">
+    <div class="section-head">
+      <p class="eyebrow">Customers</p>
+      <h2 id="customers-title">A huge market on paper, no proof anyone will pay</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><span class="step-num">~200M</span><p>fridges in Canada and the US, almost none with cameras, most running for another decade (estimate)</p></div>
+      <div class="step"><span class="step-num">20.5M</span><p>households already using smart-home devices, open to a camera in the fridge and in a target group (estimate)</p></div>
+      <div class="step"><span class="step-num">300–1,500</span><p>paying households a solo founder selling direct might reach in three years (estimate)</p></div>
+    </div>
+    <div class="prose">
+      <p>No study measures what people would pay for a fridge camera. 53% of US smart-home owners pay no subscription at all (<a href="https://www.prnewswire.com/news-releases/parks-associates-19-of-smart-home-device-owners-pay-for-subscription-service-for-a-video-security-device-adoption-of-smart-home-hubs-remains-flat-at-5-of-us-internet-households-302861262.html">Parks Associates, 2026</a>), and about half of smart appliances never get connected (<a href="https://www.techbrew.com/stories/2023/03/23/consumers-aren-t-connecting-their-smart-appliances-to-the-internet-and-it-s-a-challenge-for-appliance-makers">Tech Brew</a>). Comparable fridge gadgets crowdfunded only 78–220 backers.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Who would pay, ranked</caption>
+        <thead><tr><th scope="col">Customer</th><th scope="col">Why they'd pay</th><th scope="col">Willingness to pay</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Families watching an aging parent</th><td>Spoiled food is a health risk: adults 65+ get listeriosis at 4.4× the overall rate (<a href="https://www.cdc.gov/mmwr/preview/mmwrhtml/mm6222a4.htm">CDC</a>), and most older adults with a weakened sense of smell don't know it. There are 63 million US family caregivers (<a href="https://www.aarp.org/pri/topics/ltss/family-caregiving/caregiving-in-the-us-2025/">AARP</a>).</td><td><span class="tag high">Highest</span><br><span class="small muted">Monitoring kits already sell for US$399–899 plus US$29–99 a month</span></td></tr>
+          <tr><th scope="row">Busy families</th><td>Duplicate buys and forgotten produce. Alberta households are larger than average, and its food inflation is forecast above the national rate (<a href="https://www.dal.ca/news/2025/12/04/canada-food-price-report-2026.html">Dalhousie</a>).</td><td><span class="tag">Medium</span><br><span class="small muted">The volume segment</span></td></tr>
+          <tr><th scope="row">Budget-squeezed households</th><td>Food costs 27% more than five years ago.</td><td><span class="tag low">Low</span><br><span class="small muted">Least able to buy hardware</span></td></tr>
+          <tr><th scope="row">Eco-minded, roommates, meal-preppers</th><td>Waste guilt, shared fridges, diet goals.</td><td><span class="tag">Unknown</span><br><span class="small muted">Thin evidence</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Competition -->
+  <section class="section" id="competition" aria-labelledby="competition-title">
+    <div class="section-head">
+      <p class="eyebrow">Competition</p>
+      <h2 id="competition-title">Samsung sells the feature, phones give it away, and every add-on died</h2>
+    </div>
+    <div class="prose">
+      <p>Since May 2026, Samsung's Gemini-powered fridges recognize food as it goes in and warn by time stored (<a href="https://www.engadget.com/2167892/samsungs-bespoke-update-is-big-step-towards-a-useful-ai-for-your-fridge/">Engadget</a>). That is almost exactly this feature set, but only inside Samsung's own premium fridges, and they still can't see door bins or the freezer (<a href="https://www.techlicious.com/blog/samsung-bespoke-fridge-vision-ai-with-google-gemini/">Techlicious</a>).</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Who offers camera food tracking today</caption>
+        <thead><tr><th scope="col">Who</th><th scope="col">What it does</th><th scope="col">Price</th><th scope="col">Where it stands</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Samsung AI Vision Inside</th><td>Built-in camera with Google Gemini; tracks time stored; Instacart ordering in the US</td><td class="num">Fridge ~US$3,400</td><td>US rollout since 11 May 2026</td></tr>
+          <tr><th scope="row">LG ThinQ Food</th><td>Built-in camera recognition</td><td>2026 premium fridges</td><td>No independent accuracy data</td></tr>
+          <tr><th scope="row">GE Profile Kitchen Assistant</th><td>Crisper camera, barcode scanner, Instacart</td><td class="num">~US$4,899 reported</td><td>Barcode-first</td></tr>
+          <tr><th scope="row">Google Gemini Live, Amazon Alexa+</th><td>A phone photo of the fridge becomes a list</td><td>Free on phones</td><td>The biggest long-term threat</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Add-on cameras that tried</caption>
+        <thead><tr><th scope="col">Attempt</th><th scope="col">Price</th><th scope="col">Outcome</th><th scope="col">Why it failed</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Smarter FridgeCam</th><td class="num">US$99</td><td>Discontinued after about US$10.45M of funding (<a href="https://app.dealroom.co/companies/smarter_1">Dealroom</a>)</td><td>Recognized no items in two weeks of testing (<a href="https://www.expertreviews.co.uk/home-garden/large-appliances/smarter-fridgecam-review">Expert Reviews</a>); recognition later moved behind €12 a month</td></tr>
+          <tr><th scope="row">Liebherr HNGRYnsite</th><td class="num">€149.90</td><td>Stopped working on 31 March 2025</td><td>The app shut down with no local fallback (<a href="https://consumerrights.wiki/w/HNGRYnsite_Camera:_From_smart_kitchen_aid_to_e-waste">Consumer Rights Wiki</a>)</td></tr>
+          <tr><th scope="row">Fridge Eye</th><td class="num">US$79</td><td>No evidence it shipped at scale</td><td>Recognition unfinished at launch; 220 backers (<a href="https://www.backerkit.com/projects/fridge-eye-turn-your-fridge-into-a-smart-fridge">BackerKit</a>)</td></tr>
+          <tr><th scope="row">Amazon Dash Smart Shelf</th><td class="num">US$20</td><td>Discontinued</td><td>No reason given; low demand is the likely one</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>Of the old failure causes, only poor recognition is gone. The rest remain. One camera sees too little, a phone photo does the same job, people resist hardware plus a subscription, and cloud shutdowns brick devices.</p>
+      <p><strong>Where a startup can still stand:</strong> fridges of any brand; the door bins and drawers built-in cameras miss; Canada first, while Samsung's grocery tie-up is US-only; local data that survives a shutdown; and licensing the list-keeping software to appliance makers with weak camera AI, such as Whirlpool, Electrolux, Bosch and Miele. These are footholds, not lasting advantages.</p>
+    </div>
+  </section>
+
+  <!-- Money -->
+  <section class="section" id="money" aria-labelledby="money-title">
+    <div class="section-head">
+      <p class="eyebrow">Money</p>
+      <h2 id="money-title">The hardware earns almost nothing, so subscriptions must carry it</h2>
+    </div>
+    <div class="prose">
+      <p>A four-camera kit costs US$66–134 in parts at 1,000 units. China-made electronics now pay about 37.5% US duty (<a href="https://www.hklaw.com/en/insights/publications/2026/07/and-the-tariff-beat-goes-on">Holland &amp; Knight</a>); the research found no Canadian duty on them. Buyers anchor on US$20–50 indoor cameras and on fridge cameras that failed at US$79–149. Pricing at the usual three times cost would mean C$300–550 a kit, against the C$100–200 that savings justify.</p>
+    </div>
+    <figure class="chart" aria-labelledby="pl-title">
+      <div>
+        <div class="chart-title" id="pl-title">Profit or loss per kit sold</div>
+        <div class="chart-sub">US dollars per buyer over a four-year kit life, drawn to scale</div>
+      </div>
+      <div class="div-chart">
+        <div class="div-group">
+          <div class="div-head">A · US$149 kit + US$4 a month, 4 cameras</div>
+          <div class="div-row"><span class="div-name">Customers from ads</span><span class="div-track"><span class="div-bar neg" style="--w: 9.09%;"></span></span><span class="div-val">−$15</span></div>
+          <div class="div-row"><span class="div-name">Best case</span><span class="div-track"><span class="div-bar pos" style="--w: 29.16%;"></span></span><span class="div-val">+$50</span></div>
+        </div>
+        <div class="div-group">
+          <div class="div-head">B · US$99 kit + US$6 a month, 3 cameras</div>
+          <div class="div-row"><span class="div-name">Customers from ads</span><span class="div-track"><span class="div-bar pos" style="--w: 2.36%;"></span></span><span class="div-val">+$4</span></div>
+          <div class="div-row"><span class="div-name">Best case</span><span class="div-track"><span class="div-bar pos" style="--w: 38.74%;"></span></span><span class="div-val">+$66</span></div>
+        </div>
+        <div class="div-group">
+          <div class="div-head">C · US$249 kit, no subscription, 6 cameras</div>
+          <div class="div-row"><span class="div-name">Customers from ads</span><span class="div-track"><span class="div-bar neg" style="--w: 58.22%;"></span></span><span class="div-val">−$99</span></div>
+          <div class="div-row"><span class="div-name">Best case</span><span class="div-track"><span class="div-bar pos" style="--w: 18.98%;"></span></span><span class="div-val">+$32</span></div>
+        </div>
+        <div class="div-axis" aria-hidden="true">
+          <span></span>
+          <span class="ticks"><span style="left:0%;">−$100</span><span style="left:29.41%;">−$50</span><span style="left:58.82%;">0</span><span style="left:88.24%;">+$50</span></span>
+          <span></span>
+        </div>
+      </div>
+      <div class="legend"><span class="key"><span class="swatch bad"></span>Loss</span><span class="key"><span class="swatch good"></span>Profit</span></div>
+      <p class="chart-note">"Customers from ads" assumes winning each buyer costs half the kit price and 3% of subscribers cancel each month. "Best case" assumes US$10 camera nodes, Canada-only sales, 2% monthly cancellations and buyers who come by word of mouth. The kit with no subscription still pays about US$41–53 per buyer for future AI calls. All inputs are research assumptions, not measurements.</p>
+    </figure>
+    <figure class="chart" aria-labelledby="be-title">
+      <div>
+        <div class="chart-title" id="be-title">Break-even needs more kits than a part-time founder can sell</div>
+        <div class="chart-sub">Number of kits, best-case pricing, drawn to scale</div>
+      </div>
+      <div class="bars">
+        <div class="bar-row"><span class="bar-label">Paying households a part-time founder might reach in 3 years</span><span class="range-track"><span class="range-bar" style="--l: 6%; --w: 24%;"></span></span><span class="bar-value">300–1,500</span></div>
+        <div class="bar-row"><span class="bar-label">Break-even on launch costs</span><span class="range-track"><span class="range-bar target" style="--l: 27.64%; --w: 9.08%;"></span></span><span class="bar-value">1,382–1,836</span></div>
+        <div class="bar-row"><span class="bar-label">Break-even with two years of modest founder pay</span><span class="range-track"><span class="range-bar target" style="--l: 71.38%; --w: 23.44%;"></span></span><span class="bar-value">3,569–4,741</span></div>
+      </div>
+      <div class="range-axis" aria-hidden="true">
+        <span class="spacer"></span>
+        <span class="ticks"><span style="left:0%;">0</span><span style="left:20%;">1,000</span><span style="left:40%;">2,000</span><span style="left:60%;">3,000</span><span style="left:80%;">4,000</span><span style="left:100%;transform:translateX(-100%);">5,000</span></span>
+        <span class="spacer"></span>
+      </div>
+      <p class="chart-note">Launch costs are about US$91,000 for engineering, certification, tooling, legal work and insurance. Founder pay is US$60,000 a year. Every 1,000 kits also ties up about US$82,000 in stock before it sells.</p>
+    </figure>
+    <div class="prose">
+      <p>Subscriptions are where camera companies make their money. Arlo earns 84% gross margin on subscriptions and roughly breaks even on its cameras (<a href="https://www.sec.gov/Archives/edgar/data/0001736946/000173694626000058/arlo26q2earningsrelease-20.htm">Arlo, Q2 2026</a>). A fridge plan also pays for AI on every scan, so a US$4 plan keeps about 60%.</p>
+    </div>
+  </section>
+
+  <!-- Launching -->
+  <section class="section" id="launch" aria-labelledby="launch-title">
+    <div class="section-head">
+      <p class="eyebrow">Launching from Alberta</p>
+      <h2 id="launch-title">The paperwork is manageable. The cash comes later.</h2>
+    </div>
+    <div class="cards">
+      <div class="card"><h3>Certification</h3><p>A pre-certified ESP32-S3 module leaves only US emissions testing: about US$1,500–5,500 (<a href="https://markready.io/learn/fcc-certification-cost">MarkReady</a>). Canada's ISED approval is separate. The FCC votes on 29 October 2026 on no longer recognizing mainland-China test labs from 1 December 2028 (<a href="https://dronexl.co/2026/10/10/fcc-vote-chinese-test-labs-82-percent-us-devices/">DroneXL</a>), so plan on a North American lab.</p></div>
+      <div class="card"><h3>Privacy</h3><p>Shoot only after the door shuts, drop any frame with a person in it, never process faces, strip metadata and delete raw photos quickly. Federal and Alberta privacy laws are both under review, and the federal commissioner's guidance already covers in-home cameras (<a href="https://priv.gc.ca/en/opc-news/news-and-announcements/2020/an_200820/">OPC</a>).</p></div>
+      <div class="card"><h3>Liability</h3><p>Serious incidents must be reported to Health Canada within two days (<a href="https://laws-lois.justice.gc.ca/eng/acts/C-1.68/section-14.html">CCPSA s.14</a>). Alerts show their basis and never call food safe. Carry product liability insurance before kits go into other people's homes.</p></div>
+      <div class="card"><h3>Patents</h3><p>LG and Amazon hold patents close to this design (<a href="https://patents.google.com/patent/US20200003482A1/en">LG</a>, <a href="https://patents.google.com/patent/US20170262973A1/en">Amazon</a>). File a US provisional (US$65–130) before any public demo, build video or public code, and get a freedom-to-operate check before selling. The labelled photo set is a trade secret worth more than a patent.</p></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Funding that fits this stage</caption>
+        <thead><tr><th scope="col">Program</th><th scope="col">What it offers</th><th scope="col">Catch</th></tr></thead>
+        <tbody>
+          <tr><th scope="row"><a href="https://www.mintz.com/insights-center/viewpoints/2906/2025-11-12-innovate-baby-innovate-key-enhancements-canadas-sred">SR&amp;ED tax credit</a></th><td>35% refundable on qualifying R&amp;D spending</td><td>Canadian-controlled corporations only; paid after the tax year</td></tr>
+          <tr><th scope="row"><a href="https://govmoney.ca/programs/alberta-ieg">Alberta Innovation Employment Grant</a></th><td>Up to about 20% of qualifying spending</td><td>Paid after the tax year</td></tr>
+          <tr><th scope="row"><a href="https://grantcompass.ca/irap-funding-canada.html">NRC IRAP</a></th><td>First projects typically C$75,000–200,000</td><td>Cost-shared; expects a working product</td></tr>
+          <tr><th scope="row"><a href="https://albertainnovates.ca/funding/voucher-program/">Alberta Innovates vouchers</a></th><td>C$10,000, C$100,000 and C$150,000 programs</td><td>2026 intake status unclear; confirm first</td></tr>
+          <tr><th scope="row"><a href="https://futurpreneur.ca/en/?p=10931">Futurpreneur</a></th><td>Loans up to C$75,000 plus a mentor</td><td>Founders aged 18–39</td></tr>
+          <tr><th scope="row"><a href="https://betakit.com/alberta-enterprise-corporation-launches-accelerate-fund-iv-with-15-million-for-early-stage-tech-startups-in-the-province/">Accelerate Fund IV</a></th><td>Matches angel investment up to C$500,000</td><td>Needs a committed angel and an Alberta head office</td></tr>
+          <tr><th scope="row"><a href="https://voxbooster.com/blog/fan-funding-statistics-2026">Kickstarter</a></th><td>Pre-sales that fund a first run</td><td>About 25% of tech campaigns succeed; at most 32% of funded hardware shipped on time</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>Investors will want three things before writing a cheque: proof that households still use it at week eight, pre-sales at a price that covers costs, and a co-founder who has shipped hardware. AI coding tools speed up the app and firmware, but not tooling, certification or supply chains.</p>
+    </div>
+  </section>
+
+  <!-- Plan -->
+  <section class="section" id="plan" aria-labelledby="plan-title">
+    <div class="section-head">
+      <p class="eyebrow">The plan</p>
+      <h2 id="plan-title">Four gates decide whether the cameras earn their place</h2>
+    </div>
+    <div class="prose">
+      <p>Each stage costs roughly ten times the one before, so each has to earn the next with evidence. Keep the day job through Stage A and probably Stage B.</p>
+    </div>
+    <div class="stages">
+      <article class="stage now">
+        <div class="stage-top"><span class="stage-badge">Stage 0</span><span class="here">Start here</span></div>
+        <h3>Prove the habit</h3>
+        <div class="pills"><span class="pill">Months 0–3</span><span class="pill">C$0–1,000</span></div>
+        <p>A phone-first tracker, and a test of AI models on 30–50 labelled photos of real fridges.</p>
+        <div class="gate"><span class="gate-title">Go if</span><ul><li>Your household still uses it after four weeks</li><li>A cheap AI model reads the photos well</li><li>Half of 20+ interviews outside the family name a pain they'd pay to fix</li><li>A waitlist of 100 or more</li></ul></div>
+      </article>
+      <article class="stage">
+        <div class="stage-top"><span class="stage-badge">Stage A</span></div>
+        <h3>Measure coverage</h3>
+        <div class="pills"><span class="pill">Months 3–12</span><span class="pill">C$10,000–30,000</span></div>
+        <p>Ten hand-built wired kits in at least eight other homes, through a humid summer month. Incorporate and file a provisional patent first.</p>
+        <div class="gate"><span class="gate-title">Go if</span><ul><li>85–90%+ of visible items identified; under 5% wrongly marked gone</li><li>60%+ of homes active weekly at week eight</li><li>30% of testers would pre-pay, or 50 strangers put down deposits</li></ul></div>
+      </article>
+      <article class="stage">
+        <div class="stage-top"><span class="stage-badge">Stage B</span></div>
+        <h3>Paid pilot</h3>
+        <div class="pills"><span class="pill">Months 12–30</span><span class="pill">C$75,000–400,000</span></div>
+        <p>A custom board on a pre-certified module, FCC and ISED approval, and 100–500 paying users.</p>
+        <div class="gate"><span class="gate-title">Go if</span><ul><li>60%+ still paying at three months</li><li>Returns under 3–5%</li><li>Pre-orders cover 30–50% of the first run</li><li>A hardware co-founder or committed contract team</li></ul></div>
+      </article>
+      <article class="stage">
+        <div class="stage-top"><span class="stage-badge">Stage C</span></div>
+        <h3>First production</h3>
+        <div class="pills"><span class="pill">Months 24–48</span><span class="pill">C$0.8–2M</span></div>
+        <p>Hard tooling and a 1,000–2,000-unit run with English and French packaging.</p>
+        <div class="gate"><span class="gate-title">Ready if</span><ul><li>95%+ production yield</li><li>All certifications in hand</li><li>12–18 months of cash left after paying for the run</li></ul></div>
+      </article>
+    </div>
+    <div class="fallback">
+      <p class="eyebrow">If a gate says no</p>
+      <div class="fallback-row"><span>The hardware fails, but people want the app</span><span class="arrow">→</span><span>Ship the phone app as the product; the camera becomes an optional add-on</span></div>
+      <div class="fallback-row"><span>Families won't pay, but caregivers respond</span><span class="arrow">→</span><span>A family check-in plan at US$15–30 a month</span></div>
+      <div class="fallback-row"><span>People use the software but won't buy hardware</span><span class="arrow">→</span><span>License the list-keeping software to appliance makers</span></div>
+    </div>
+  </section>
+
+  <!-- First 90 days -->
+  <section class="section" id="start" aria-labelledby="start-title">
+    <div class="section-head">
+      <p class="eyebrow">First 90 days</p>
+      <h2 id="start-title">Start it up for under C$1,000</h2>
+    </div>
+    <ul class="checklist">
+      <li><span class="box" aria-hidden="true"></span><span class="when">Weeks 1–4</span><span>Build the phone-first app. Snap the fridge; the AI lists items, tracks days and flags what's getting old.</span></li>
+      <li><span class="box" aria-hidden="true"></span><span class="when">Weeks 1–4</span><span>Photograph and label 30–50 shots of real fridges, and test which AI model reads them best.</span></li>
+      <li><span class="box" aria-hidden="true"></span><span class="when">Weeks 3–8</span><span>Build one three-camera prototype for your own fridge, about C$200–350 in parts (estimate). Measure what it sees and how often the lens fogs.</span></li>
+      <li><span class="box" aria-hidden="true"></span><span class="when">Weeks 4–10</span><span>Interview 20 people outside the family: adult children of aging parents and busy families. Ask what they do now and what they would pay.</span></li>
+      <li><span class="box" aria-hidden="true"></span><span class="when">Weeks 6–12</span><span>Start a waitlist and aim for 100 sign-ups.</span></li>
+      <li><span class="box" aria-hidden="true"></span><span class="when">Week 12</span><span>Decide at Gate 0. File a US provisional patent before any public demo, build video or public code.</span></li>
+    </ul>
+  </section>
+
+  <!-- Risks -->
+  <section class="section" id="risks" aria-labelledby="risks-title">
+    <div class="section-head">
+      <p class="eyebrow">Risks</p>
+      <h2 id="risks-title">What could sink it, and how to test each cheaply</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Risk</th><th scope="col">Why it matters</th><th scope="col">Cheap early test</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">The cameras can't see enough</th><td>Tall items hide back rows, and no kit's coverage has ever been measured</td><td>Share of items seen, per zone, in 8+ packed fridges (Stage A)</td></tr>
+          <tr><th scope="row">The list drifts and trust goes</th><td>Small errors pile up every day</td><td>Weekly audits: 90–95% right on perishables, with 2–3 questions a day at most</td></tr>
+          <tr><th scope="row">People stop using it</th><td>Half of smart appliances never get connected; no trial shows a camera alone cuts waste (<a href="https://www.researchgate.net/publication/273885759_Technicolouring_the_Fridge_Reducing_food_waste_through_uses_of_colour-coding_and_cameras">best study</a>)</td><td>60%+ of beta homes still active at week eight</td></tr>
+          <tr><th scope="row">The price is higher than the value</th><td>A kit needs C$300–550; savings justify C$100–200</td><td>Paid deposits before building 100 units</td></tr>
+          <tr><th scope="row">Fog in a humid summer</th><td>Alberta's dry winters flatter the hardware</td><td>Test through at least one humid summer month</td></tr>
+          <tr><th scope="row">Big companies and free phone apps</th><td>Samsung, LG and GE build it in; Gemini and Alexa read fridge photos for free</td><td>In the beta, compare effort and accuracy against just taking a phone photo</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Sources -->
+  <section class="section" id="sources" aria-labelledby="sources-title">
+    <div class="section-head">
+      <p class="eyebrow">Sources and method</p>
+      <h2 id="sources-title">Where the numbers come from</h2>
+    </div>
+    <div class="prose">
+      <p class="small">Compiled in October 2026 from six research areas and about 200 sources. Pages were read through search-engine summaries because they couldn't be opened directly, so check a source before quoting its number. Figures marked "estimate" are calculations built from those sources. US$1 ≈ C$1.40. Research and drafting assisted by Claude.</p>
+    </div>
+    <div class="sources">
+      <div>
+        <h3>Food waste and customers</h3>
+        <ul>
+          <li><a href="https://lovefoodhatewaste.ca/about/food-waste/">Love Food Hate Waste Canada: household food waste</a></li>
+          <li><a href="https://www.wrap.ngo/sites/default/files/2020-12/Household-Food-and-Drink-Waste-in-the-United-Kingdom-2012.pdf">WRAP: Household Food and Drink Waste in the UK 2012</a></li>
+          <li><a href="https://www.frontiersin.org/journals/nutrition/articles/10.3389/fnut.2019.00143/full">Guelph family waste audit, Frontiers in Nutrition (2019)</a></li>
+          <li><a href="https://www.aarp.org/pri/topics/ltss/family-caregiving/caregiving-in-the-us-2025/">AARP: Caregiving in the US 2025</a></li>
+          <li><a href="https://www.cdc.gov/mmwr/preview/mmwrhtml/mm6222a4.htm">CDC: listeriosis in older adults</a></li>
+          <li><a href="https://www.envoyathome.com/">envoyatHome: senior monitoring pricing</a></li>
+          <li><a href="https://www.care.com/c/remote-monitoring-for-seniors/">Care.com: remote monitoring for seniors</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Technology and competition</h3>
+        <ul>
+          <li><a href="https://doi.org/10.3390/s26165213">Two-camera vending study, Sensors (2026)</a></li>
+          <li><a href="https://www.consumerreports.org/french-door-refrigerators/samsung-family-hub-refrigerator-review/">Consumer Reports: Samsung Family Hub cameras</a></li>
+          <li><a href="https://news.samsung.com/us/samsung-unveil-ai-vision-google-gemini-ces-2026/">Samsung: AI Vision with Google Gemini (CES 2026)</a></li>
+          <li><a href="https://www.lg.com/us/press-release/lg-signature-evolves-with-ai-redefining-premium-home-appliances-at-ces-2026">LG: ThinQ Food (CES 2026)</a></li>
+          <li><a href="https://www.engadget.com/home/kitchen-tech/ge-appliances-new-smart-refrigerator-automates-grocery-shopping-with-a-barcode-scanner-and-instacart-194326073.html">Engadget: GE Profile Kitchen Assistant</a></li>
+          <li><a href="https://www.pymnts.com/news/retail/2026/amazon-wants-alexa-to-own-the-shopping-list-before-walmart-ever-sees-it/">PYMNTS: Alexa and the shopping list</a></li>
+          <li><a href="https://thespoon.tech/food-waste-gadgets-cant-get-vc-love-but-kickstarter-backers-are-all-in/">The Spoon: food-waste gadgets and VCs</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Money and launch</h3>
+        <ul>
+          <li><a href="https://www.tariffstool.com/guides/tariff-on-electronics-from-china-2026">TariffsTool: US tariffs on Chinese electronics</a></li>
+          <li><a href="https://ring.com/support/articles/v5hc7/introducing-ring-home-plans">Ring Home plans</a></li>
+          <li><a href="https://www.cambridge.org/core/journals/design-science/article/identifying-challenges-in-crowdfunded-product-development-a-review-of-kickstarter-projects/F2659234936B8349EAF5AFCFBA2199E8">Design Science: crowdfunded hardware delays</a></li>
+          <li><a href="https://beancount.io/blog/2026/08/31/uspto-2026-fee-schedule-small-business-trademark-patent-budget-guide">USPTO 2026 fee schedule</a></li>
+          <li><a href="https://www.sreducation.ca/budget-2025-receives-royal-assent-what-this-means-for-sred/">SR&amp;ED changes now law</a></li>
+          <li><a href="https://albertainnovates.ca/funding/voucher-program/">Alberta Innovates voucher program</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <span>Fridge Camera Business Analysis</span>
+    <span>Packaged on 26 OC 16 · Best before 27 AL 16</span>
+  </footer>
+</main>
