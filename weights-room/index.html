@@ -1,0 +1,1948 @@
+<title>The Weights Room</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: a training notebook. One reading column for lessons, a wide
+   bench for the lab. Teal means "positive / yes / class 1", rust means
+   "negative / no / class 0", everywhere on the page. */
+:root {
+  --bg: #F1F3EF;
+  --surface: #FFFFFF;
+  --sunken: #E6EAE5;
+  --ink: #16201E;
+  --muted: #55625E;
+  --line: #D2D9D4;
+  --pos: #0C7A6A;
+  --neg: #C2491A;
+  --mark: #F2D257;
+  --mark-ink: #2E2600;
+  --pos-soft: rgba(12, 122, 106, 0.12);
+  --neg-soft: rgba(194, 73, 26, 0.12);
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1413; --surface: #151D1B; --sunken: #1C2624; --ink: #E3EAE7; --muted: #98A6A1; --line: #2A3633;
+    --pos: #3BC2AB; --neg: #F0804F; --mark: #E6C64A; --mark-ink: #241D00;
+    --pos-soft: rgba(59, 194, 171, 0.14); --neg-soft: rgba(240, 128, 79, 0.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1413; --surface: #151D1B; --sunken: #1C2624; --ink: #E3EAE7; --muted: #98A6A1; --line: #2A3633;
+  --pos: #3BC2AB; --neg: #F0804F; --mark: #E6C64A; --mark-ink: #241D00;
+  --pos-soft: rgba(59, 194, 171, 0.14); --neg-soft: rgba(240, 128, 79, 0.14);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface);
+}
+a { color: var(--pos); text-underline-offset: 3px; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--pos); outline-offset: 2px; }
+.mono, code { font-family: var(--mono); font-size: 0.9em; }
+code { background: var(--sunken); padding: 0.1em 0.35em; border-radius: 4px; }
+
+/* ---------- header ---------- */
+.topbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--surface); border-bottom: 1px solid var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.topbar-inner {
+  max-width: 1120px; margin: 0 auto; display: flex; align-items: center; gap: 12px 20px;
+  flex-wrap: wrap; padding-block: 10px;
+}
+.brand {
+  font-family: var(--display); font-weight: 850; font-stretch: 78%; font-size: 1.35rem;
+  letter-spacing: 0.01em; text-transform: uppercase; color: var(--ink); text-decoration: none;
+  display: flex; align-items: center; gap: 10px; margin-right: auto;
+}
+.brand-mark { width: 26px; height: 26px; flex: none; }
+.nav { display: flex; gap: 4px; flex-wrap: wrap; }
+.nav a {
+  color: var(--muted); text-decoration: none; font-size: 0.9rem; font-weight: 500;
+  padding: 6px 10px; border-radius: 6px;
+}
+.nav a:hover { color: var(--ink); background: var(--sunken); }
+.nav a[aria-current="page"] { color: var(--ink); background: var(--sunken); }
+
+/* ---------- page frame ---------- */
+.page {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; }
+.read { max-width: 700px; margin: 0 auto; }
+
+h1, h2, h3 { font-family: var(--display); line-height: 1.1; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2rem, 6vw, 3.4rem); font-weight: 850; font-stretch: 80%; letter-spacing: -0.005em; }
+h2 { font-size: clamp(1.4rem, 3.6vw, 1.9rem); font-weight: 800; font-stretch: 85%; }
+h3 { font-size: 1.15rem; font-weight: 750; font-stretch: 90%; }
+.eyebrow {
+  font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+}
+.lede { font-size: 1.15rem; color: var(--muted); max-width: 62ch; }
+.prose p, .prose ul, .prose ol { margin: 0 0 1em; }
+.prose ul, .prose ol { padding-left: 1.3em; }
+.prose li { margin-bottom: 0.35em; }
+.prose h3 { margin: 1.6em 0 0.5em; }
+.prose strong { font-weight: 600; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer; text-decoration: none;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  padding: 8px 14px; border-radius: 8px; font-weight: 500; font-size: 0.95rem; line-height: 1.3;
+}
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--pos); border-color: var(--pos); color: var(--surface); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.small { padding: 5px 10px; font-size: 0.85rem; }
+.btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* ---------- home ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 40px; align-items: center; padding-block: 12px 36px; }
+.hero h1 { margin: 10px 0 16px; }
+.hero-figure { display: grid; gap: 8px; justify-items: center; }
+.hero-figure canvas { width: 100%; max-width: 380px; aspect-ratio: 1; border-radius: var(--radius); border: 1px solid var(--line); }
+.hero-caption { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+.progress-line { font-size: 0.95rem; color: var(--muted); margin-top: 18px; }
+
+.parts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; margin-top: 12px; }
+.part h2 { margin: 6px 0 14px; }
+.lesson-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.lesson-list li { border-bottom: 1px solid var(--line); }
+.lesson-list a {
+  display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto; gap: 12px; align-items: baseline;
+  padding: 12px 4px; text-decoration: none; color: var(--ink);
+}
+.lesson-list a:hover { background: var(--surface); }
+.lesson-num { font-family: var(--mono); color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.lesson-title { font-weight: 600; }
+.lesson-sub { display: block; color: var(--muted); font-size: 0.9rem; font-weight: 400; }
+.chip {
+  font-family: var(--mono); font-size: 0.72rem; padding: 2px 8px; border-radius: 99px; white-space: nowrap;
+  border: 1px solid var(--line); color: var(--muted);
+}
+.chip.done { background: var(--pos-soft); border-color: transparent; color: var(--pos); }
+.extras { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 40px; }
+.extra {
+  display: grid; gap: 6px; align-content: start; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface); color: var(--ink); text-decoration: none;
+}
+.extra:hover { border-color: var(--muted); }
+.extra p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+/* ---------- lesson ---------- */
+.lesson-head { margin-bottom: 24px; }
+.lesson-head h1 { font-size: clamp(1.9rem, 5.5vw, 2.8rem); margin-top: 8px; }
+.meetup {
+  margin: 28px 0; padding: 18px 20px; border-radius: var(--radius);
+  background: color-mix(in srgb, var(--mark) 22%, var(--surface)); border: 1px solid color-mix(in srgb, var(--mark) 60%, var(--line));
+}
+.meetup .tag {
+  display: inline-block; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--mark); color: var(--mark-ink); padding: 2px 8px; border-radius: 4px; margin-bottom: 8px;
+}
+.meetup p { margin: 0; font-size: 1.05rem; }
+.widget {
+  margin: 24px 0; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface);
+}
+.widget-title { font-family: var(--display); font-weight: 750; font-stretch: 90%; font-size: 1.05rem; margin-bottom: 4px; }
+.widget-note { color: var(--muted); font-size: 0.88rem; margin: 0 0 12px; }
+.illustration-note { font-size: 0.82rem; color: var(--muted); font-style: italic; margin-top: 10px; }
+.two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.slider-row { display: grid; grid-template-columns: 4.6em minmax(0, 1fr) 3.6em; gap: 10px; align-items: center; margin: 6px 0; }
+.slider-row label { font-family: var(--mono); font-size: 0.88rem; }
+.slider-row output { font-family: var(--mono); font-size: 0.88rem; text-align: right; font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; accent-color: var(--pos); }
+.readout {
+  font-family: var(--mono); font-size: 0.86rem; background: var(--sunken); border-radius: 8px; padding: 10px 12px;
+  overflow-x: auto; white-space: pre; line-height: 1.7; font-variant-numeric: tabular-nums;
+}
+.big-number { font-family: var(--display); font-weight: 850; font-stretch: 80%; font-size: 2.4rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+.seg button { border: 0; background: var(--surface); padding: 6px 12px; cursor: pointer; font-size: 0.88rem; border-right: 1px solid var(--line); }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+canvas.plot { width: 100%; aspect-ratio: 1; display: block; border-radius: 8px; border: 1px solid var(--line); touch-action: manipulation; }
+canvas.wide { width: 100%; display: block; }
+.pos { color: var(--pos); } .neg { color: var(--neg); } .muted { color: var(--muted); }
+.lesson-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 40px; flex-wrap: wrap; }
+.lesson-nav a { max-width: 48%; }
+.lesson-nav .next { margin-left: auto; text-align: right; }
+.lesson-nav small { display: block; color: var(--muted); font-size: 0.78rem; }
+.callout { padding: 14px 16px; border: 1px dashed var(--line); border-radius: var(--radius); margin: 18px 0; font-size: 0.95rem; }
+.formula {
+  font-family: var(--mono); font-size: 1rem; text-align: center; padding: 14px; margin: 16px 0;
+  background: var(--sunken); border-radius: 8px; overflow-x: auto;
+}
+.table-scroll { overflow-x: auto; margin: 0 0 1em; }
+table.data { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+table.data th, table.data td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.data th { font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+table.data td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ---------- quiz ---------- */
+.quiz { margin-top: 36px; border-top: 2px solid var(--ink); padding-top: 18px; }
+.quiz h2 { margin-bottom: 4px; }
+.q { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.q-prompt { font-weight: 600; margin-bottom: 10px; }
+.q-options { display: grid; gap: 8px; }
+.q-opt {
+  text-align: left; cursor: pointer; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+  display: grid; grid-template-columns: 1.6em minmax(0, 1fr); gap: 6px; line-height: 1.45;
+}
+.q-opt:hover:not([disabled]) { border-color: var(--muted); }
+.q-opt .letter { font-family: var(--mono); color: var(--muted); }
+.q-opt[disabled] { cursor: default; }
+.q-opt.right { border-color: var(--pos); background: var(--pos-soft); }
+.q-opt.wrong { border-color: var(--neg); background: var(--neg-soft); }
+.q-why { margin-top: 10px; font-size: 0.93rem; padding: 10px 12px; border-radius: 8px; background: var(--sunken); }
+.q-why b.pos, .q-why b.neg { font-weight: 600; }
+.quiz-score { margin-top: 18px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+
+/* ---------- lab ---------- */
+.lab-head { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; margin-bottom: 18px; }
+.lab-head h1 { font-size: clamp(1.9rem, 5vw, 2.6rem); }
+.toolbar {
+  display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; padding: 14px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 16px;
+}
+.field { display: grid; gap: 4px; min-width: 0; }
+.field > span { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.field select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.field input[type="range"] { width: 120px; }
+.lab-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; min-width: 0; }
+.panel h3 { margin-bottom: 8px; }
+.arch { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 10px; font-size: 0.88rem; }
+.stepper { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 0.85rem; }
+.stepper button {
+  width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; line-height: 1; padding: 0;
+}
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+.stat { display: grid; gap: 2px; }
+.stat span { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.stat b { font-family: var(--mono); font-weight: 500; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.8rem; color: var(--muted); margin-top: 8px; align-items: center; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: -1px; margin-right: 4px; }
+.ring { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--muted); vertical-align: -1px; margin-right: 4px; }
+.neuron-info { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); min-height: 1.5em; margin-top: 6px; overflow-x: auto; white-space: nowrap; }
+.hint-line { font-size: 0.9rem; color: var(--muted); margin-top: 8px; }
+
+/* ---------- tokens / attention / LM ---------- */
+.tokens { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0; }
+.tok {
+  font-family: var(--mono); font-size: 0.9rem; padding: 3px 6px; border-radius: 5px; display: inline-grid; justify-items: center; line-height: 1.25;
+}
+.tok small { font-size: 0.65rem; opacity: 0.75; }
+.tok:nth-child(4n+1) { background: var(--pos-soft); }
+.tok:nth-child(4n+2) { background: var(--neg-soft); }
+.tok:nth-child(4n+3) { background: color-mix(in srgb, var(--mark) 35%, transparent); }
+.tok:nth-child(4n+4) { background: var(--sunken); }
+.merge-list { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); max-height: 9.5em; overflow: auto; background: var(--sunken); border-radius: 8px; padding: 8px 10px; }
+textarea, input[type="text"] {
+  width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface); font: inherit; color: var(--ink);
+}
+.bars { display: grid; gap: 4px; margin-top: 8px; }
+.bar { display: grid; grid-template-columns: 2.6em minmax(0, 1fr) 3.6em; gap: 8px; align-items: center; font-family: var(--mono); font-size: 0.85rem; }
+.bar-track { height: 14px; background: var(--sunken); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--pos); }
+.bar .p { text-align: right; font-variant-numeric: tabular-nums; }
+.sample {
+  font-family: var(--mono); font-size: 0.9rem; background: var(--sunken); border-radius: 8px; padding: 10px 12px; min-height: 3.4em;
+  overflow-wrap: anywhere;
+}
+.sample .prompt { color: var(--muted); }
+.att-sentence { display: flex; flex-wrap: wrap; gap: 6px 4px; margin: 12px 0; }
+.att-word { display: grid; justify-items: center; gap: 3px; }
+.att-word button, .att-word span.w {
+  font-family: var(--mono); font-size: 0.92rem; padding: 4px 7px; border-radius: 6px; border: 1px solid transparent; background: none;
+}
+.att-word button { border-color: var(--pos); cursor: pointer; }
+.att-word button[aria-pressed="true"] { background: var(--pos); color: var(--surface); }
+.att-bar { width: 100%; height: 6px; border-radius: 3px; background: var(--pos); }
+.att-pct { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
+
+/* ---------- cheat sheet / code ---------- */
+.qa { display: grid; gap: 14px; margin: 18px 0 32px; }
+.qa details { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 0 16px; }
+.qa summary { cursor: pointer; padding: 14px 0; font-weight: 600; }
+.qa details p { margin: 0 0 14px; }
+.glossary { display: grid; grid-template-columns: minmax(0, 11em) minmax(0, 1fr); gap: 0; border-top: 1px solid var(--line); margin-top: 12px; }
+.glossary dt, .glossary dd { margin: 0; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.glossary dt { font-weight: 600; padding-right: 12px; }
+.code-view {
+  font-family: var(--mono); font-size: 0.8rem; line-height: 1.55; background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 14px; overflow: auto; max-height: 75vh; white-space: pre; tab-size: 2;
+}
+.code-view .c { color: var(--muted); }
+
+@media (max-width: 860px) {
+  .hero, .parts, .lab-grid { grid-template-columns: minmax(0, 1fr); }
+  .hero-figure { order: -1; }
+  .hero-figure canvas { max-width: 280px; }
+  .extras { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .two-col { grid-template-columns: minmax(0, 1fr); }
+  .extras { grid-template-columns: minmax(0, 1fr); }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .glossary { grid-template-columns: minmax(0, 1fr); }
+  .glossary dt { border-bottom: 0; padding-bottom: 0; }
+  .brand { font-size: 1.15rem; }
+  .nav a { padding: 5px 8px; font-size: 0.85rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#home">
+      <svg class="brand-mark" viewBox="0 0 26 26" aria-hidden="true">
+        <line x1="5" y1="7" x2="13" y2="13" stroke="var(--pos)" stroke-width="2.4"/>
+        <line x1="5" y1="19" x2="13" y2="13" stroke="var(--neg)" stroke-width="1.4"/>
+        <line x1="13" y1="13" x2="21" y2="13" stroke="var(--pos)" stroke-width="3"/>
+        <circle cx="5" cy="7" r="3" fill="var(--ink)"/><circle cx="5" cy="19" r="3" fill="var(--ink)"/>
+        <circle cx="13" cy="13" r="3.4" fill="var(--ink)"/><circle cx="21" cy="13" r="3.4" fill="var(--ink)"/>
+      </svg>
+      The Weights Room
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#home" data-nav="home">Course</a>
+      <a href="#lab" data-nav="lab">Lab</a>
+      <a href="#cheat-sheet" data-nav="cheat-sheet">Cheat sheet</a>
+      <a href="#final-test" data-nav="final-test">Final test</a>
+      <a href="#code" data-nav="code">Code</a>
+    </nav>
+  </div>
+</header>
+<main id="view" class="page"></main>
+
+<script src="nn.js"></script>
+<script src="tokenizer.js"></script>
+<script src="tinylm.js"></script>
+<script>
+"use strict";
+
+// =====================================================================
+//  Small helpers
+// =====================================================================
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+const fmt = (n, d = 2) => (Object.is(Math.round(n * 10 ** d), -0) ? 0 : n).toFixed(d);
+const signed = (n, d = 2) => (n < 0 ? "(" + fmt(n, d) + ")" : fmt(n, d));
+const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+let viewToken = 0; // bumps on every navigation so old animation loops stop
+
+function store(key, value) {
+  try {
+    if (value === undefined) return JSON.parse(localStorage.getItem(key) || "null");
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) { return null; }
+}
+function progress() { return store("weights-room-progress") || { lessons: {}, finalBest: null }; }
+function saveProgress(p) { store("weights-room-progress", p); }
+
+function hexToRgb(hex) {
+  hex = hex.trim().replace("#", "");
+  if (hex.length === 3) hex = hex.split("").map((c) => c + c).join("");
+  const n = parseInt(hex, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function colors() {
+  const cs = getComputedStyle(document.documentElement);
+  const get = (name) => cs.getPropertyValue(name).trim();
+  return {
+    pos: hexToRgb(get("--pos")), neg: hexToRgb(get("--neg")), surface: hexToRgb(get("--surface")),
+    ink: get("--ink"), muted: get("--muted"), line: get("--line"), posHex: get("--pos"), negHex: get("--neg"),
+    surfaceHex: get("--surface"), sunken: get("--sunken"),
+  };
+}
+// value from -1 (rust) through 0 (paper) to +1 (teal)
+function valueColor(v, C, strength = 0.8) {
+  const t = Math.min(1, Math.abs(v)) * strength;
+  const target = v >= 0 ? C.pos : C.neg;
+  return [0, 1, 2].map((k) => Math.round(C.surface[k] + (target[k] - C.surface[k]) * t));
+}
+
+// Size a canvas for crisp drawing; returns {ctx, w, h} in CSS pixels.
+function setupCanvas(canvas, cssHeight) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = canvas.clientWidth || 300;
+  const h = cssHeight || canvas.clientHeight || w;
+  if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+  }
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+
+const DOMAIN = 1.15; // the 2D board runs from -1.15 to 1.15
+const toPx = (v, size) => ((v + DOMAIN) / (2 * DOMAIN)) * size;
+const fromPx = (px, size) => (px / size) * 2 * DOMAIN - DOMAIN;
+
+// Shade the board by the network's answer, then draw the points.
+function drawBoundary(canvas, predict, points, opts = {}) {
+  const { ctx, w } = setupCanvas(canvas);
+  const C = colors();
+  const N = opts.res || 48;
+  const off = document.createElement("canvas");
+  off.width = N; off.height = N;
+  const octx = off.getContext("2d");
+  const img = octx.createImageData(N, N);
+  for (let j = 0; j < N; j++) {
+    for (let i = 0; i < N; i++) {
+      const x = -DOMAIN + (2 * DOMAIN * (i + 0.5)) / N;
+      const y = DOMAIN - (2 * DOMAIN * (j + 0.5)) / N;
+      const p = predict([x, y]);
+      const c = valueColor(2 * p - 1, C, 0.55);
+      const o = (j * N + i) * 4;
+      img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = 255;
+    }
+  }
+  octx.putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(off, 0, 0, w, w);
+  // axes
+  ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(toPx(0, w), 0); ctx.lineTo(toPx(0, w), w); ctx.moveTo(0, toPx(0, w)); ctx.lineTo(w, toPx(0, w)); ctx.stroke();
+  // points
+  const r = opts.radius || Math.max(3, w / 95);
+  for (const pt of points) {
+    const px = toPx(pt.x[0], w), py = w - toPx(pt.x[1], w);
+    ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2);
+    const col = pt.y ? C.posHex : C.negHex;
+    if (pt.test) {
+      ctx.fillStyle = C.surfaceHex; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = col; ctx.stroke();
+    } else {
+      ctx.fillStyle = col; ctx.fill(); ctx.lineWidth = 1.2; ctx.strokeStyle = C.surfaceHex; ctx.stroke();
+    }
+  }
+  if (opts.marker) {
+    const mx = toPx(opts.marker[0], w), my = w - toPx(opts.marker[1], w);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(mx, my, 8, 0, Math.PI * 2); ctx.moveTo(mx - 13, my); ctx.lineTo(mx - 4, my); ctx.moveTo(mx + 4, my); ctx.lineTo(mx + 13, my);
+    ctx.moveTo(mx, my - 13); ctx.lineTo(mx, my - 4); ctx.moveTo(mx, my + 4); ctx.lineTo(mx, my + 13); ctx.stroke();
+  }
+}
+
+// Simple line chart for loss over time.
+function drawLossChart(canvas, series, opts = {}) {
+  const { ctx, w, h } = setupCanvas(canvas, opts.height || 110);
+  const C = colors();
+  ctx.clearRect(0, 0, w, h);
+  const padL = 36, padB = 18, padT = 8, padR = 8;
+  const all = series.flatMap((s) => s.data);
+  const maxY = opts.maxY || Math.max(0.1, ...all.filter(Number.isFinite)) * 1.05;
+  const n = Math.max(2, ...series.map((s) => s.data.length));
+  const X = (i) => padL + (i / (n - 1)) * (w - padL - padR);
+  const Y = (v) => padT + (1 - Math.min(v, maxY) / maxY) * (h - padT - padB);
+  ctx.font = "11px " + getComputedStyle(document.body).getPropertyValue("--mono");
+  ctx.fillStyle = C.muted; ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+  for (const frac of [0, 0.5, 1]) {
+    const v = maxY * frac;
+    ctx.beginPath(); ctx.moveTo(padL, Y(v)); ctx.lineTo(w - padR, Y(v)); ctx.stroke();
+    ctx.fillText(v.toFixed(v >= 10 ? 0 : 2), 2, Y(v) + 4);
+  }
+  ctx.fillText(opts.xLabel || "", padL, h - 3);
+  for (const s of series) {
+    if (s.data.length < 2) continue;
+    ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.setLineDash(s.dash || []);
+    ctx.beginPath();
+    s.data.forEach((v, i) => (i ? ctx.lineTo(X(i), Y(v)) : ctx.moveTo(X(i), Y(v))));
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+}
+
+// =====================================================================
+//  Quiz engine
+// =====================================================================
+function renderQuiz(container, questions, { title = "Check yourself", onFinish } = {}) {
+  let answered = 0, correct = 0;
+  container.innerHTML = `<div class="quiz"><h2>${title}</h2>
+    <p class="muted" style="margin:0">Tap an answer. You'll see why it's right or wrong straight away.</p>
+    <div class="q-list"></div><div class="quiz-score" hidden></div></div>`;
+  const list = $(".q-list", container);
+  const scoreBox = $(".quiz-score", container);
+  questions.forEach((q, qi) => {
+    const div = document.createElement("div");
+    div.className = "q";
+    div.innerHTML = `<div class="q-prompt">${qi + 1}. ${q.q}</div><div class="q-options">${q.options
+      .map((o, oi) => `<button class="q-opt" data-i="${oi}"><span class="letter">${"ABCD"[oi]}</span><span>${o}</span></button>`)
+      .join("")}</div>`;
+    list.appendChild(div);
+    $$(".q-opt", div).forEach((btn) =>
+      btn.addEventListener("click", () => {
+        const chosen = +btn.dataset.i;
+        const right = chosen === q.answer;
+        $$(".q-opt", div).forEach((b) => {
+          b.disabled = true;
+          if (+b.dataset.i === q.answer) b.classList.add("right");
+        });
+        if (!right) btn.classList.add("wrong");
+        const why = document.createElement("div");
+        why.className = "q-why";
+        why.innerHTML = (right ? '<b class="pos">Right.</b> ' : '<b class="neg">Not quite.</b> ') + q.why;
+        div.appendChild(why);
+        answered++; if (right) correct++;
+        if (answered === questions.length) {
+          scoreBox.hidden = false;
+          scoreBox.innerHTML = `<span class="big-number">${correct}/${questions.length}</span>
+            <span>${correct === questions.length ? "Perfect. You own this one." : correct >= questions.length * 0.6 ? "Solid. Reread the explanations for the ones you missed." : "Worth another pass. Read the lesson again, then retry."}</span>
+            <button class="btn small" type="button">Retry</button>`;
+          $("button", scoreBox).addEventListener("click", () => renderQuiz(container, questions, { title, onFinish }));
+          if (onFinish) onFinish(correct, questions.length);
+        }
+      })
+    );
+  });
+}
+
+// =====================================================================
+//  Course content
+// =====================================================================
+const LESSONS = [
+  // ------------------------------------------------------------- 1
+  {
+    part: 1, title: "What a neural network is", sub: "A math machine with knobs that tune themselves",
+    body: `
+<p>A normal program follows rules a person wrote. "If the temperature is below zero, say <em>wear a coat</em>." That works when you can write the rules down.</p>
+<p>Some problems have no rules you could ever write down. What exact rule tells a cat photo from a dog photo? Which rule turns a question into a good answer? There are too many cases.</p>
+<p>A <strong>neural network</strong> takes a different route. It's a big math formula full of adjustable numbers called <strong>weights</strong>. At first the weights are random, so its answers are garbage. Then you show it thousands of examples where you already know the answer. After each one, a method called <strong>gradient descent</strong> nudges every weight a tiny bit in whichever direction makes the answer less wrong. Repeat that enough times and the weights settle into values that give good answers, even for examples it has never seen.</p>
+<p>That's what "machine learning" means. Nobody writes the rules. The rules end up stored in the weights.</p>
+<h3>Why "neural"?</h3>
+<p>The idea was loosely inspired by brain cells. Warren McCulloch and Walter Pitts described a math model of a neuron in 1943, and Frank Rosenblatt built a learning machine called the <em>perceptron</em> in 1958. Today's artificial neurons are far simpler than real ones, though. Each is just a few multiplications and an addition. Think of the name as history, not biology.</p>
+<h3>The whole course in three ideas</h3>
+<ol>
+  <li><strong>A neuron</strong> multiplies its inputs by weights, adds them up, and bends the result. (Lessons 2 to 5)</li>
+  <li><strong>The loss</strong> is one number that says how wrong the network is. (Lesson 6)</li>
+  <li><strong>Training</strong> lowers the loss by nudging every weight downhill. Backpropagation works out which way is downhill for each weight. (Lessons 7 to 9)</li>
+</ol>
+<p>ChatGPT, Claude, and Gemini run on these same three ideas, just with billions of weights. Part 2 shows how.</p>
+<div class="callout">Think of training at the gym. A network starts out untrained, does rep after rep, gets feedback each time, and makes small adjustments. One rep does almost nothing. Ten thousand reps make it strong. That's why this course is called The Weights Room: training a network means training its weights.</div>`,
+    meetup: "A neural network is a big formula with millions or billions of adjustable numbers called weights. You show it examples with known answers, measure how wrong it is, and nudge every weight to be a little less wrong. Do that millions of times and the weights end up holding the patterns. Nobody writes the rules by hand.",
+    quiz: [
+      { q: "What's the main difference between a normal program and a neural network?", options: ["Neural networks run faster", "In a normal program a person writes the rules. A neural network learns its rules from examples.", "Neural networks don't use math", "Normal programs can't do math with decimals"], answer: 1, why: "A normal program follows rules a person wrote. A neural network starts with random weights and learns them from examples." },
+      { q: "When a neural network \"learns\", what actually changes inside it?", options: ["It writes new lines of code", "It saves every example into a database", "The numbers in its weights change", "It grows new neurons"], answer: 2, why: "Learning means adjusting the weights. The structure stays the same and only the numbers change." },
+      { q: "Are artificial neurons copies of real brain neurons?", options: ["Yes, they copy them exactly", "No. They were loosely inspired by them, but each is just a few multiplications and an addition.", "Yes, but smaller", "No, they were named after a scientist called Neural"], answer: 1, why: "The name comes from a loose inspiration in the 1940s and 50s. An artificial neuron is far simpler than a biological one." },
+    ],
+  },
+  // ------------------------------------------------------------- 2
+  {
+    part: 1, title: "One neuron", sub: "Multiply, add, squish. Try it by hand.",
+    body: `
+<p>A neuron takes in some numbers, does three things, and sends out one number.</p>
+<ol>
+  <li><strong>Multiply</strong> each input by its own weight.</li>
+  <li><strong>Add</strong> those up, plus one extra number called the <strong>bias</strong>.</li>
+  <li><strong>Squish</strong> the total through an <em>activation function</em>. Here we use <em>sigmoid</em>, which turns any number into one between 0 and 1.</li>
+</ol>
+<div class="formula">z = w₁·x₁ + w₂·x₂ + b &nbsp;&nbsp;→&nbsp;&nbsp; output = sigmoid(z)</div>
+<p><strong>Worked example.</strong> Inputs x₁ = 0.5 and x₂ = −0.2. Weights w₁ = 2 and w₂ = 1. Bias b = 0.1.<br>
+z = (2 × 0.5) + (1 × −0.2) + 0.1 = 1.0 − 0.2 + 0.1 = <strong>0.9</strong>. Then sigmoid(0.9) = <strong>0.71</strong>. So the neuron says "71% yes".</p>
+<ul>
+  <li>A <strong>weight</strong> says how much an input matters, and in which direction. A big positive weight means "this input pushes me toward yes". A negative weight means it pushes toward no. Near zero means "I ignore this input".</li>
+  <li>The <strong>bias</strong> is the neuron's default lean, before it sees anything. It moves the threshold.</li>
+</ul>
+<h3>What one neuron can draw</h3>
+<p>Give the neuron two inputs: a point's left-right position (x₁) and up-down position (x₂). Its job is to say whether the point is teal (1) or rust (0). Whatever the weights are, the line where it switches from "no" to "yes" is always a <strong>straight line</strong>. The weights tilt the line and the bias slides it.</p>
+<p>Set the weights by hand below. Get every point right on <em>Two groups</em>, then switch to <em>Four corners</em> and try again.</p>
+<div data-widget="neuron"></div>
+<p>You can't get Four corners right, and neither can the computer. No single straight line puts both teal corners on one side and both rust corners on the other. This puzzle is called <strong>XOR</strong>, and in 1969 Marvin Minsky and Seymour Papert's book <em>Perceptrons</em> pointed out that one-layer networks can't solve it. The fix is more layers, coming up in lesson 4.</p>`,
+    meetup: "One artificial neuron multiplies each input by a weight, adds them up with a bias, and runs the total through an activation function. On its own it can only draw a straight line between yes and no. That's why we stack them into layers.",
+    quiz: [
+      { q: "Inputs x₁ = 1 and x₂ = 2, weights w₁ = 0.5 and w₂ = −1, bias b = 1. What is z, before the squish?", options: ["3.5", "−0.5", "0.5", "−2.5"], answer: 1, why: "z = (0.5 × 1) + (−1 × 2) + 1 = 0.5 − 2 + 1 = −0.5." },
+      { q: "What does a large negative weight on an input mean?", options: ["That input is ignored", "That input is broken", "That input pushes the neuron toward \"no\"", "That input pushes the neuron toward \"yes\""], answer: 2, why: "The sign gives the direction. Negative weights push the total down, toward \"no\"." },
+      { q: "On a 2D board, what shape can a single neuron use to split yes from no?", options: ["A straight line", "A circle", "Any shape it wants", "A spiral"], answer: 0, why: "One neuron's yes/no boundary is always straight. Curves and closed shapes need several neurons working in layers." },
+    ],
+  },
+  // ------------------------------------------------------------- 3
+  {
+    part: 1, title: "Activation functions", sub: "The bend that makes layers worth having",
+    body: `
+<p>After a neuron adds up its inputs, it passes the total through an <strong>activation function</strong>. This looks like a small detail, but without it the whole idea falls apart.</p>
+<p><strong>Here's why.</strong> Without the bend, a neuron only multiplies and adds. Feed one multiply-and-add into another and you still have a multiply-and-add. Ten layers of them collapse into what one layer could do, which is a straight line. The bend lets every layer add a new curve, so the network can build complicated shapes out of simple pieces.</p>
+<p>The common ones:</p>
+<ul>
+  <li><strong>Sigmoid</strong>: squashes any number into 0 to 1. Handy for "probability of yes", so we use it on the final output.</li>
+  <li><strong>Tanh</strong>: like sigmoid but from −1 to 1, centred on zero. The lab uses it by default.</li>
+  <li><strong>ReLU</strong> (rectified linear unit): if the number is negative, output 0. Otherwise pass it through unchanged. It sounds too simple to work, but it's cheap and trains well, and it became the standard choice for deep networks in the 2010s. Today's language models mostly use smooth relatives of it, such as GELU and SwiGLU.</li>
+</ul>
+<div data-widget="activation"></div>
+<p>Pick <em>None</em> above and you get a straight line. That's what every neuron would be without an activation function.</p>`,
+    meetup: "Activation functions add a bend after each neuron's weighted sum. Without them, a stack of layers collapses into one linear function, a straight line, no matter how deep it is. ReLU, which zeroes out negatives, became the standard in deep learning because it's cheap and trains well.",
+    quiz: [
+      { q: "Why do neural networks need activation functions?", options: ["To make the numbers smaller", "Without them, any number of layers collapses into one straight-line function", "To speed up the computer", "They don't really need them"], answer: 1, why: "Multiply-and-add stacked on multiply-and-add is still multiply-and-add. The bend is what lets depth add power." },
+      { q: "What does ReLU output for −3? And for 2?", options: ["−3 and 2", "0 and 0", "0 and 2", "0.05 and 0.88"], answer: 2, why: "ReLU outputs max(0, z). Negatives become 0 and positives pass through unchanged." },
+      { q: "Which activation is used on the lab's output neuron to give a probability?", options: ["ReLU", "Sigmoid", "None", "Tanh"], answer: 1, why: "Sigmoid always returns a number between 0 and 1, so it can be read as \"probability of class 1\"." },
+    ],
+  },
+  // ------------------------------------------------------------- 4
+  {
+    part: 1, title: "Layers", sub: "From straight lines to any shape",
+    body: `
+<p>One neuron draws one line. So use more neurons, arranged in layers:</p>
+<ul>
+  <li>The <strong>input layer</strong> is just the data. Here that's the point's x₁ and x₂.</li>
+  <li><strong>Hidden layers</strong> sit in the middle. They're "hidden" because you never see their values in the data or in the answer. The network invents what they mean.</li>
+  <li>The <strong>output layer</strong> gives the answer. Here that's one neuron saying how likely the point is to be teal.</li>
+</ul>
+<p>Every neuron in a layer connects to every neuron in the next one, and each connection has its own weight.</p>
+<h3>How layers build shapes</h3>
+<p>Each hidden neuron draws its own soft line. The next layer combines those lines. Two lines can make a corner, several can surround a region like a circle, and with another layer on top you can make shapes out of those shapes. In networks that read images, early layers tend to react to edges, middle layers to textures and parts, and later layers to whole objects. Nobody programs this. It comes out of training.</p>
+<p><strong>"Deep learning"</strong> just means neural networks with many layers. That's all "deep" refers to.</p>
+<div class="widget">
+  <div class="widget-title">See it in the lab</div>
+  <p class="widget-note">Each button opens the lab with a preset. Press <b>Train</b> there and watch. In the network picture, every neuron shows a tiny map of what it reacts to.</p>
+  <div class="btn-row">
+    <button class="btn" data-lab-preset="xor-none">XOR with no hidden layer (fails)</button>
+    <button class="btn primary" data-lab-preset="xor-4">XOR with 4 hidden neurons (works)</button>
+    <button class="btn" data-lab-preset="circle-3">Circle with 3 hidden neurons</button>
+  </div>
+</div>
+<p>In the XOR run, look at the hidden neurons' little maps. Each one learns a single tilted line. The output neuron then combines them into the four-corner pattern that no single neuron could draw.</p>`,
+    meetup: "Neurons are arranged in layers: input, hidden, and output. Each hidden neuron learns a simple feature, and the next layer combines those features into more complex ones. Deep learning just means many layers. Nobody tells a layer what to detect. Those features emerge from training.",
+    quiz: [
+      { q: "What does \"deep\" mean in \"deep learning\"?", options: ["The network understands things deeply", "The network has many layers", "It was trained for a long time", "It uses deep-sea data centres"], answer: 1, why: "Deep just means many layers stacked between input and output." },
+      { q: "Why can a network with a hidden layer solve XOR when one neuron can't?", options: ["Hidden layers use more electricity", "Each hidden neuron draws its own line, and the output combines several lines into a shape one line can't make", "Hidden layers remember the answers", "It can't. XOR is impossible"], answer: 1, why: "Several lines combined can carve out corners and regions. That's exactly what XOR needs." },
+      { q: "Why are hidden layers called \"hidden\"?", options: ["Their values aren't part of the input data or the final answer, so the network decides what they mean", "They're encrypted", "They're turned off during training", "Programmers aren't allowed to look at them"], answer: 0, why: "You can inspect them, as the lab does, but no one tells them what to represent. The network works that out during training." },
+    ],
+  },
+  // ------------------------------------------------------------- 5
+  {
+    part: 1, title: "The forward pass", sub: "Watch numbers flow left to right",
+    body: `
+<p>Running an input through a network is called the <strong>forward pass</strong>. Each layer takes the numbers from the layer before it, runs every neuron's multiply-add-squish, and hands its outputs on. Whatever comes out the far end is the answer.</p>
+<p>Below is a tiny network: 2 inputs, 2 hidden neurons using tanh, and 1 output neuron using sigmoid. Its weights are fixed so you can follow the arithmetic. Move the inputs and every number updates.</p>
+<div data-widget="forward"></div>
+<p>That's all a network does when it gives an answer. A big language model works the same way, with billions of these multiply-adds for every word it writes. It's a huge amount of simple arithmetic, which is why AI runs on GPUs: they do thousands of multiply-adds at the same time.</p>
+<h3>Training versus inference</h3>
+<p>Using a finished network to get answers is called <strong>inference</strong>. When you chat with ChatGPT or Claude, the model is only doing forward passes. Its weights are frozen, and it isn't learning from your chat as you type. Learning happens earlier, in a separate and far more expensive stage called <strong>training</strong>.</p>
+<div class="callout">In the <a href="#lab">lab</a>, tap anywhere on the board to see the full forward pass for that spot, with every weight and every sum.</div>`,
+    meetup: "Getting an answer from a network is a forward pass. The input flows layer by layer, and every neuron does a weighted sum and an activation. Using a trained model is called inference, and its weights don't change while you use it. Learning happens beforehand, in training.",
+    quiz: [
+      { q: "What is \"inference\"?", options: ["Training a model from scratch", "Using a trained model to get answers, with forward passes only", "Guessing which weights to use", "Deleting old weights"], answer: 1, why: "Inference runs forward passes through frozen weights. Training is the separate stage that changes the weights." },
+      { q: "While you chat with a typical LLM, do its weights change?", options: ["Yes, after every message", "Yes, but only overnight", "No. The weights are fixed during a chat.", "Only when you say thank you"], answer: 2, why: "Chatting is inference. Some products save notes about you between chats, but that's separate from the model's weights." },
+      { q: "Why does AI run on GPUs?", options: ["GPUs are cheaper than CPUs", "A network is mostly enormous numbers of multiply-adds, and GPUs do thousands of them in parallel", "GPUs have more storage", "GPUs were made for AI"], answer: 1, why: "GPUs were built for graphics, which is also massively parallel arithmetic. That turned out to fit neural networks perfectly." },
+    ],
+  },
+  // ------------------------------------------------------------- 6
+  {
+    part: 1, title: "Loss", sub: "One number that says how wrong you are",
+    body: `
+<p>To improve, the network needs a score for how badly it's doing. That score is the <strong>loss</strong>. Lower is better, and training means pushing the loss down.</p>
+<p>For yes/no answers we use <strong>cross-entropy loss</strong>. Look at the probability the network gave to the <em>correct</em> answer, and take minus its logarithm:</p>
+<div class="formula">loss = −log(probability given to the right answer)</div>
+<div class="table-scroll"><table class="data">
+  <tr><th>Gave the right answer</th><th>Loss</th><th>Meaning</th></tr>
+  <tr><td class="num">99%</td><td class="num">0.01</td><td>Confident and right. Almost no penalty.</td></tr>
+  <tr><td class="num">90%</td><td class="num">0.11</td><td>Good.</td></tr>
+  <tr><td class="num">50%</td><td class="num">0.69</td><td>A coin flip. It knows nothing.</td></tr>
+  <tr><td class="num">10%</td><td class="num">2.30</td><td>Wrong.</td></tr>
+  <tr><td class="num">1%</td><td class="num">4.61</td><td>Confident and wrong. Punished hard.</td></tr>
+</table></div>
+<p>Being confidently wrong costs far more than being unsure. That pushes the network to be honest about its confidence. The lab reports the <em>average</em> loss over all the training points.</p>
+<div data-widget="loss"></div>
+<p>Other jobs use other losses. To predict a number, like a house price, people often use <em>mean squared error</em>, the average of (guess − truth)². Language models use the same cross-entropy loss you see here, applied to the probability the model gave the real next word.</p>`,
+    meetup: "The loss is a single number for how wrong the model is on its training examples. For classification, and for language models, it's usually cross-entropy: minus the log of the probability the model gave the correct answer. Training is just making that number go down.",
+    quiz: [
+      { q: "The right answer is \"yes\". Which prediction gets the higher loss?", options: ["60% yes", "20% yes", "They're the same", "It depends on the bias"], answer: 1, why: "Only 20% on the right answer means more wrong, so a higher loss: −log(0.2) ≈ 1.61 versus −log(0.6) ≈ 0.51." },
+      { q: "What is training trying to do to the loss?", options: ["Make it as large as possible", "Keep it exactly at 0.5", "Make it as small as possible", "Make it negative"], answer: 2, why: "Loss measures wrongness. Training tries to get it as low as it can." },
+      { q: "Why does cross-entropy punish \"confident and wrong\" so harshly?", options: ["To push the model to keep its confidence honest", "It's a rounding error", "To make training slower", "It doesn't"], answer: 0, why: "Putting 1% on the right answer costs 4.6, while a 50/50 guess costs only 0.69. Overconfidence gets expensive." },
+    ],
+  },
+  // ------------------------------------------------------------- 7
+  {
+    part: 1, title: "Gradient descent", sub: "Walking downhill in the fog",
+    body: `
+<p>Picture every possible setting of the weights as a spot on a huge landscape. The height at each spot is the loss. Training means finding a low valley.</p>
+<p>The catch is that you can't see the landscape. A real network has millions of weights, so this "landscape" has millions of directions. What you <em>can</em> work out is the slope right where you're standing. That slope is called the <strong>gradient</strong>. It tells you which way is uphill and how steep it is.</p>
+<p>So you take a small step the other way, downhill. Then you check the slope again and take another step. That's <strong>gradient descent</strong>:</p>
+<div class="formula">new weight = old weight − learning rate × slope</div>
+<p>The minus sign means "go against the slope". The <strong>learning rate</strong> sets the step size.</p>
+<ul>
+  <li>Too small and training crawls.</li>
+  <li>Too big and you jump right over the valley, bounce around, or fly off the chart.</li>
+</ul>
+<div data-widget="descent"></div>
+<p>This landscape has a deep valley on the left and a shallower one on the right. Start on the right with a small learning rate and you get stuck in the shallow one, called a <strong>local minimum</strong>. Real networks have so many directions that there's usually some way downhill, and in practice getting stuck is less of a problem than you'd expect. Picking a good learning rate matters a lot, though.</p>`,
+    meetup: "Training is gradient descent. Picture the loss as a landscape over all possible weight settings. The gradient is the slope where you stand, so you step every weight a little bit downhill and repeat. The learning rate is the step size: too small is slow, too big overshoots.",
+    quiz: [
+      { q: "What does the gradient tell you?", options: ["The final answer", "Which direction is uphill for the loss and how steep it is", "How many layers to use", "The learning rate"], answer: 1, why: "The gradient is the slope of the loss. Step the opposite way to go downhill." },
+      { q: "What tends to happen when the learning rate is far too big?", options: ["Training gets perfectly accurate", "Nothing changes", "Steps overshoot the valley, so the loss bounces around or blows up", "The network gets more layers"], answer: 2, why: "Big steps jump right over the low point, sometimes further up the other side each time." },
+      { q: "Why is there a minus sign in: new weight = old − learning rate × slope?", options: ["To go opposite the slope, which is downhill", "Weights must stay negative", "It's a typo", "To make the learning rate smaller"], answer: 0, why: "The slope points uphill. Subtracting it moves you downhill, toward lower loss." },
+    ],
+  },
+  // ------------------------------------------------------------- 8
+  {
+    part: 1, title: "Backpropagation", sub: "Handing out blame, last layer to first",
+    body: `
+<p>Gradient descent needs the slope for <em>every</em> weight. A big model has billions of them. Nudging each one separately to see what happens would take forever. <strong>Backpropagation</strong> gets all the slopes in one backward sweep.</p>
+<h3>The idea: hand out blame</h3>
+<ol>
+  <li>Run the forward pass and compare the output with the truth. Say the output was 0.3 too high.</li>
+  <li>For the output neuron, a mathematical shortcut (sigmoid paired with cross-entropy) makes its "blame" simply <strong>prediction − truth</strong>.</li>
+  <li>Each weight feeding that neuron gets blame equal to <strong>the neuron's blame × the input on that wire</strong>. A wire that carried a big signal had a big effect, so it gets more of the blame. A wire that carried 0 gets none.</li>
+  <li>Pass the blame back to the hidden neurons. Each one gets a share depending on how strongly it was connected, times how responsive its activation was at that moment (the activation's slope).</li>
+  <li>Repeat, layer by layer, back to the start. Now every weight has its slope.</li>
+</ol>
+<p>In calculus this is the <strong>chain rule</strong>. You don't need calculus to get the idea, though: blame flows backwards through the same wires the numbers flowed forward through.</p>
+<div data-widget="backprop"></div>
+<p>This is the core of the real code in <a href="#code">nn.js</a>. The blame is called <code>delta</code>:</p>
+<pre class="readout">let delta = [p - y];                          // output blame: prediction − truth
+gradW[l][j][i] += delta[j] * prev[i];         // weight blame = neuron blame × its input
+newDelta[i] = sum(weights[l][j][i] * delta[j]) * slopeOfActivation;  // pass it back
+weight -= learningRate * gradient;            // then step downhill</pre>
+<p>Backpropagation was popularised in 1986 by David Rumelhart, Geoffrey Hinton, and Ronald Williams. Hinton later shared the 2018 Turing Award with Yoshua Bengio and Yann LeCun, and the 2024 Nobel Prize in Physics with John Hopfield, for foundational work on neural networks.</p>`,
+    meetup: "Backpropagation is how the network works out the gradient for every weight at once. You start with the error at the output and use the chain rule to pass blame backwards, layer by layer. Each weight's share depends on how much signal flowed through it. Then gradient descent nudges every weight. Hinton, Rumelhart and Williams popularised it in 1986.",
+    quiz: [
+      { q: "What does backpropagation compute?", options: ["The final answer", "The slope of the loss for every weight, which gradient descent then uses", "The learning rate", "The training data"], answer: 1, why: "Backprop produces the gradients. Gradient descent then uses them to update the weights." },
+      { q: "Which direction does backpropagation work in?", options: ["From the output back toward the input", "From the input forward to the output", "Random order", "Only the middle layer"], answer: 0, why: "It starts at the error at the output and passes blame backwards, hence the name." },
+      { q: "On one example, a weight's input wire carried exactly 0. How much does that weight get adjusted for that example?", options: ["A lot", "None. Weight blame = neuron blame × input, and the input was 0.", "It gets reset to 0", "It doubles"], answer: 1, why: "If nothing flowed through the wire, the weight couldn't have caused the error, so its gradient is 0 for that example." },
+    ],
+  },
+  // ------------------------------------------------------------- 9
+  {
+    part: 1, title: "Training for real", sub: "Epochs, test data, and the overfitting trap",
+    body: `
+<p>Now put it all together. Training loops over these steps:</p>
+<ol>
+  <li>Take a small handful of examples, called a <strong>mini-batch</strong>. The lab uses 10.</li>
+  <li>Run a forward pass on each, and measure the loss.</li>
+  <li>Backpropagate to get every weight's gradient, averaged over the batch.</li>
+  <li>Take one gradient descent step.</li>
+</ol>
+<p>One full trip through all the training data is an <strong>epoch</strong>. Small networks train for hundreds or thousands of epochs. Big language models often see each piece of their training text only about once, because there's so much of it.</p>
+<h3>Practice exam versus real exam</h3>
+<p>If you memorise the answers to a practice exam, you ace the practice and fail the real thing. Networks can do the same. That's called <strong>overfitting</strong>.</p>
+<p>So we hold some data back as a <strong>test set</strong>. The network never trains on it, and we only use it to check. In the lab, the hollow dots are test points. If the training loss keeps falling while the test loss climbs, the network is memorising instead of learning.</p>
+<h3>Parameters versus hyperparameters</h3>
+<ul>
+  <li><strong>Parameters</strong> are the weights and biases. The network learns them.</li>
+  <li><strong>Hyperparameters</strong> are settings <em>you</em> choose: the number of layers, the number of neurons, the learning rate, the batch size.</li>
+</ul>
+<div class="widget">
+  <div class="widget-title">Your challenges in the lab</div>
+  <ol style="margin:8px 0 12px;padding-left:1.2em">
+    <li>Get the <b>Spiral</b> to over 95% test accuracy. Hint: 2 hidden layers of 6 to 8 neurons, tanh, learning rate 0.1 to 0.3.</li>
+    <li>Set the learning rate to <b>3</b> and watch the loss go haywire.</li>
+    <li>Turn noise up to <b>0.5</b> on Circle, give it 2 layers of 8, and train for a long time. Watch the gap open between training and test loss. That gap is overfitting.</li>
+  </ol>
+  <a class="btn primary" href="#lab">Open the lab</a>
+</div>`,
+    meetup: "Training loops over mini-batches: forward pass, loss, backprop, update. One pass over the data is an epoch. You always keep a test set the model never trains on, because a model can memorise its training data. That's overfitting. Weights are parameters, and the settings you choose, like learning rate and layer sizes, are hyperparameters.",
+    quiz: [
+      { q: "What is overfitting?", options: ["The network is too small to learn", "The network memorises its training data instead of learning the general pattern, so it does worse on new data", "Training ran too fast", "The loss reached zero on the test set"], answer: 1, why: "Training loss looks great but test loss gets worse. It memorised the practice exam." },
+      { q: "Which of these is a hyperparameter rather than a parameter?", options: ["A weight between two neurons", "A neuron's bias", "The learning rate", "The output value"], answer: 2, why: "You choose hyperparameters, like learning rate and layer sizes. The network learns its parameters, the weights and biases." },
+      { q: "What is one epoch?", options: ["One weight update", "One full pass through all the training data", "One hour of training", "One layer"], answer: 1, why: "An epoch means the network has seen every training example once." },
+    ],
+  },
+  // ------------------------------------------------------------- 10
+  {
+    part: 2, title: "Tokens", sub: "How text becomes numbers",
+    body: `
+<p>A <strong>large language model</strong> (LLM) is a neural network trained on enormous amounts of text. Neural networks only work with numbers, though, so step one is turning text into numbers.</p>
+<p>LLMs don't read letter by letter, or even word by word. They read <strong>tokens</strong>: chunks of text, each with an ID number. Common words are usually one token. Rare or long words get split into pieces. In English, one token works out to about ¾ of a word, or roughly 4 characters, on average.</p>
+<h3>How the token list is built: Byte Pair Encoding</h3>
+<p>GPT models and many others build their vocabulary with an algorithm called <strong>BPE</strong>:</p>
+<ol>
+  <li>Start with every single character as its own token.</li>
+  <li>Find the pair of neighbouring tokens that shows up most often in the training text.</li>
+  <li>Glue that pair into one new token, and remember the rule.</li>
+  <li>Repeat tens of thousands of times.</li>
+</ol>
+<p>Below is a real BPE tokenizer, trained live in your browser on a few paragraphs of text. Drag the slider to change how many merges it learns, and type your own text.</p>
+<div data-widget="tokenizer"></div>
+<h3>Why tokens matter</h3>
+<ul>
+  <li>LLM usage is <strong>priced and limited in tokens</strong>. A "200,000-token context window" means about 150,000 words.</li>
+  <li>The model never sees individual letters, only token IDs. That's why LLMs have famously struggled with questions like "how many r's are in strawberry?". The word reaches the model as a couple of chunks, not as letters.</li>
+  <li>Real vocabularies hold roughly 50,000 to 200,000+ tokens and are built from huge amounts of text in many languages.</li>
+</ul>`,
+    meetup: "LLMs don't see letters or words, they see tokens: chunks of text with ID numbers, about ¾ of a word each in English. The vocabulary is usually built with Byte Pair Encoding, which repeatedly merges the most common pair of pieces. That's why they're bad at counting letters. They literally don't see them.",
+    quiz: [
+      { q: "Roughly how much English text is one token, on average?", options: ["One letter", "About ¾ of a word, or around 4 characters", "One sentence", "One page"], answer: 1, why: "A common rule of thumb: 1 token is about 4 characters, or about ¾ of an English word." },
+      { q: "What does Byte Pair Encoding do over and over?", options: ["Deletes rare words", "Translates text into English", "Merges the most frequent neighbouring pair of tokens into a new token", "Counts the letters in each word"], answer: 2, why: "BPE starts from characters and keeps gluing the most common pair, building up word pieces and whole words." },
+      { q: "Why can counting the letters in a word trip up an LLM?", options: ["LLMs can't do any math", "It sees token IDs for chunks of the word, not the individual letters", "Letters are banned from training data", "Its context window is too small"], answer: 1, why: "\"strawberry\" might arrive as two or three chunks. The letters inside a chunk aren't directly visible to the model." },
+    ],
+  },
+  // ------------------------------------------------------------- 11
+  {
+    part: 2, title: "Embeddings", sub: "Meaning as a position in space",
+    body: `
+<p>A token ID like 4,821 is just a label. The number itself means nothing, and token 4,822 isn't "close" to it in meaning. So the first layer of an LLM swaps every token ID for a long list of learned numbers called an <strong>embedding</strong>.</p>
+<p>Think of an embedding as coordinates. A point on a map has 2 coordinates. A token's embedding might have thousands. GPT-3's had 12,288.</p>
+<p>Nobody sets these numbers by hand. They start random and get trained by backpropagation along with everything else. Because words used in similar ways need to produce similar predictions, they drift close together: <em>dog</em> ends up near <em>puppy</em>, and <em>Edmonton</em> near <em>Calgary</em>. Even <em>directions</em> can carry meaning. A famous 2013 result from Google's word2vec project found that king − man + woman lands near queen.</p>
+<div data-widget="embedding"></div>
+<p>The tiny language model in the next lesson learns embeddings for each letter, using the same method.</p>
+<p>Embeddings also matter outside chatbots. Search engines, recommendation systems, and "chat with your documents" tools (called <strong>RAG</strong>, retrieval-augmented generation) all turn text into embeddings, then find the stored pieces closest in meaning.</p>`,
+    meetup: "An embedding turns each token into a long list of learned numbers, thousands of them in big models, so it becomes a point in a high-dimensional space. Words used in similar ways end up near each other because training pushes them there. Semantic search and RAG work by comparing embeddings.",
+    quiz: [
+      { q: "What is an embedding?", options: ["A token's ID number", "A learned list of numbers that places a token as a point in space, where nearby means similar", "A compressed file", "A type of activation function"], answer: 1, why: "Embeddings are learned coordinates. Similar meanings end up close together." },
+      { q: "Who decides the numbers in an embedding?", options: ["Linguists, by hand", "A dictionary", "Training: they start random and are adjusted by backpropagation like any other weight", "They're the token ID repeated"], answer: 2, why: "Embeddings are just more weights. Gradient descent shapes them." },
+      { q: "Why would \"Edmonton\" and \"Calgary\" end up with similar embeddings?", options: ["Their spellings are similar", "Someone grouped Alberta cities together", "They show up in similar contexts, so the model benefits from treating them alike", "Alphabetical order"], answer: 2, why: "Words used the same way lead to similar predictions, so training pulls their embeddings together." },
+    ],
+  },
+  // ------------------------------------------------------------- 12
+  {
+    part: 2, title: "Predicting the next token", sub: "The one job every LLM is trained for",
+    body: `
+<p>Here's the surprising core of it. A language model is trained to do exactly one thing: <strong>given some text, predict the next token</strong>.</p>
+<p>Its output layer has one neuron per token in the vocabulary. A function called <strong>softmax</strong> turns those outputs into probabilities that add up to 100%. "The weather in Edmonton in January is" might give <em>cold</em> 41%, <em>freezing</em> 18%, <em>brutal</em> 6%, and so on through every token it knows.</p>
+<p>To write, the model picks a token from those probabilities, adds it to the text, and runs again. That's why chatbots appear to type one word at a time. They literally write one token at a time.</p>
+<p>Training uses everything from Part 1. Take real text, hide the next token, have the model predict it, and score it with cross-entropy loss on the probability it gave the real next token. Then backpropagate and update. Do this over trillions of tokens.</p>
+<h3>Train your own language model</h3>
+<p>Below is a real character-level language model, written from scratch in <a href="#code">tinylm.js</a>. It reads the last 4 characters and predicts the next one. It has embeddings, one hidden layer of 64 tanh neurons, and a softmax output. It trains on about 1,600 characters of simple sentences. Press Train and watch it go from gibberish to near-English.</p>
+<div data-widget="lm"></div>
+<p>Notice the starting loss. With 26 possible characters, pure guessing gives −log(1/26) ≈ <strong>3.26</strong>. Everything below that is learned.</p>
+<p>This model is tiny. Mostly it memorises its 1,600 characters, so it'll never write a new idea. Scale it up a few billion times, give it the attention mechanism from the next lesson, and train it on a large share of the written internet, and predicting the next token well starts to require knowing grammar, facts, and how arguments work.</p>`,
+    meetup: "An LLM is trained to predict the next token. Its output is a probability for every token in its vocabulary. To write, it samples one, appends it, and runs again, one token at a time. Training is that same prediction task over trillions of tokens with cross-entropy loss and backprop. To predict text well at scale, it has to pick up grammar, facts and reasoning patterns.",
+    quiz: [
+      { q: "What is an LLM fundamentally trained to do?", options: ["Look up answers in a database", "Predict the next token, given the text so far", "Translate between languages", "Count words"], answer: 1, why: "Pretraining is next-token prediction. Everything else is built on top of that." },
+      { q: "How does an LLM write a long answer?", options: ["It writes the whole answer at once", "It predicts one token, appends it, and repeats with the longer text", "It copies a stored answer", "It writes the last word first"], answer: 1, why: "Generation is a loop: predict, pick, append, repeat." },
+      { q: "With 26 possible characters, what's the loss of a model that guesses uniformly at random?", options: ["0", "About 0.69", "About 3.26, which is −log(1/26)", "26"], answer: 2, why: "Each character gets 1/26 probability, and −log(1/26) ≈ 3.26. A trained model should get well below that." },
+    ],
+  },
+  // ------------------------------------------------------------- 13
+  {
+    part: 2, title: "Attention and Transformers", sub: "Letting every word look at every other word",
+    body: `
+<p>The tiny model can only see 4 characters back. Real language needs much more. In "The trophy didn't fit in the suitcase because <strong>it</strong> was too big", working out what <em>it</em> means requires looking way back.</p>
+<p>In 2017, researchers at Google published <em>Attention Is All You Need</em>, introducing the <strong>Transformer</strong>. Almost every major LLM is built on it. The T in GPT stands for Transformer: Generative Pre-trained Transformer.</p>
+<h3>How attention works</h3>
+<p>Every token makes three vectors from its embedding, using learned weights:</p>
+<ul>
+  <li>A <strong>query</strong>: "what am I looking for?"</li>
+  <li>A <strong>key</strong>: "what do I have to offer?"</li>
+  <li>A <strong>value</strong>: "here's the information I'll pass along."</li>
+</ul>
+<p>Each token compares its query with every earlier token's key (a dot product). Softmax turns those scores into percentages. Then the token takes a blend of the values, weighted by those percentages. So <em>it</em> can pull in most of its meaning from <em>trophy</em>, and from <em>suitcase</em> if the sentence ends with "too small".</p>
+<div data-widget="attention"></div>
+<h3>The full Transformer</h3>
+<ul>
+  <li>Many attention <strong>heads</strong> run side by side, each free to learn a different kind of relationship: grammar, who "it" refers to, nearby words, and so on.</li>
+  <li>Each layer is <strong>attention</strong>, where tokens share information, followed by a <strong>feed-forward network</strong> applied to each token on its own. That network is a regular neural net, like the ones in the lab.</li>
+  <li>Stack dozens of those layers. GPT-3 had 96 layers with 96 heads each.</li>
+  <li>In GPT-style models, each token can only attend to tokens <em>before</em> it, never after. That way it can't cheat by peeking at the word it's meant to predict.</li>
+</ul>
+<p>Attention also works on all tokens at once instead of reading them one by one, which suits GPUs well. That's a big reason Transformers could scale so far.</p>`,
+    meetup: "Transformers, from Google's 2017 paper 'Attention Is All You Need', are the architecture behind nearly all LLMs. The key part is attention: each token makes a query, compares it against every earlier token's key, and takes a weighted blend of their values. That's how 'it' can figure out it means 'the trophy'. Layers alternate attention with feed-forward networks, stacked dozens deep.",
+    quiz: [
+      { q: "What does the T in GPT stand for?", options: ["Text", "Transformer", "Token", "Training"], answer: 1, why: "Generative Pre-trained Transformer. The Transformer was introduced by Google researchers in 2017." },
+      { q: "In attention, what does a token's query get compared against?", options: ["The other tokens' keys", "The learning rate", "The loss", "The vocabulary list"], answer: 0, why: "Query against keys gives scores. Softmax turns them into weights, and the output is a weighted blend of the values." },
+      { q: "In a GPT-style model, which tokens can a token attend to?", options: ["Only the next token", "Every token, including future ones", "Itself and earlier tokens only", "Only the first token"], answer: 2, why: "Masking stops it from looking ahead. Otherwise predicting the next token would be cheating." },
+    ],
+  },
+  // ------------------------------------------------------------- 14
+  {
+    part: 2, title: "How a chatbot gets made", sub: "Pretraining, fine-tuning, and feedback",
+    body: `
+<p>A chat assistant like ChatGPT or Claude is built in stages.</p>
+<h3>1. Pretraining</h3>
+<p>Next-token prediction on an enormous pile of text: web pages, books, code, and more, adding up to trillions of tokens. This is where almost all the compute goes. It can mean thousands of GPUs running for weeks or months, and frontier models are widely reported to cost tens to hundreds of millions of dollars to train.</p>
+<p>The result is a <strong>base model</strong>. It's great at continuing text, but it isn't an assistant. Ask it a question and it might just carry on with more questions, like a list it found online.</p>
+<h3>2. Fine-tuning</h3>
+<p>Next, the model trains on many example conversations showing a helpful assistant answering well. This is called supervised fine-tuning or instruction tuning. It's the same next-token training, just on carefully chosen examples.</p>
+<h3>3. Learning from feedback</h3>
+<p>People compare pairs of answers and pick the better one. Those choices train a <em>reward model</em> that scores answers, and the LLM is then tuned to earn higher scores. This is <strong>RLHF</strong>, reinforcement learning from human feedback, popularised by OpenAI's InstructGPT work in 2022. Anthropic also developed <em>Constitutional AI</em>, where the model's feedback is guided by a written set of principles.</p>
+<h3>Scale</h3>
+<div class="table-scroll"><table class="data">
+  <tr><th>Network</th><th>Parameters</th></tr>
+  <tr><td>Your lab network (2 hidden layers of 4)</td><td class="num">37</td></tr>
+  <tr><td>Your tiny language model</td><td class="num">4,574</td></tr>
+  <tr><td>GPT-2 (2019, largest version)</td><td class="num">1.5 billion</td></tr>
+  <tr><td>GPT-3 (2020)</td><td class="num">175 billion</td></tr>
+  <tr><td>Today's frontier models</td><td>Usually not disclosed. Many are thought to be in the hundreds of billions or more.</td></tr>
+</table></div>
+<p>GPT-3 trained on about 300 billion tokens. Open models released since then have trained on 15 trillion or more. Every one of those parameters gets tuned with the same gradient descent and backpropagation you used in the lab.</p>`,
+    meetup: "A chatbot is built in three stages. Pretraining is next-token prediction on trillions of tokens, which gives a base model. Fine-tuning on example conversations makes it act like an assistant. Then feedback training like RLHF tunes it toward answers people prefer. Pretraining is where most of the money and GPU time goes.",
+    quiz: [
+      { q: "What comes out of pretraining alone?", options: ["A finished, polite assistant", "A base model that's good at continuing text but isn't tuned to act as an assistant", "A search engine", "A tokenizer"], answer: 1, why: "Pretraining makes a powerful text predictor. Fine-tuning and feedback turn it into an assistant." },
+      { q: "What does RLHF stand for?", options: ["Really Large Hidden Functions", "Reinforcement Learning from Human Feedback", "Recurrent Layer Hyper Fitting", "Rapid Learning, High Frequency"], answer: 1, why: "People rank answers, a reward model learns those preferences, and the LLM is tuned to score well." },
+      { q: "How many parameters did GPT-3 have?", options: ["175 thousand", "1.5 billion", "175 billion", "175 trillion"], answer: 2, why: "175 billion, per the 2020 paper. GPT-2's largest version had 1.5 billion." },
+    ],
+  },
+  // ------------------------------------------------------------- 15
+  {
+    part: 2, title: "What LLMs can't do, and why", sub: "Hallucinations, memory, temperature",
+    body: `
+<p>Knowing how LLMs work also explains where they fail. People at a meetup will respect you for knowing the limits.</p>
+<h3>Hallucination</h3>
+<p>A model is trained to produce <em>likely-sounding</em> text, not checked facts. It has no built-in database to look things up in. Facts it saw often are usually stored well in its weights. For rare facts, it can produce something that sounds just as confident and is completely made up. Connecting a model to search or to your own documents (RAG) and training it to say "I don't know" both help, but neither removes the problem completely.</p>
+<h3>Knowledge cutoff</h3>
+<p>The weights were trained on data up to some date. Ask about anything after it, and the model doesn't know unless a tool fetches the information.</p>
+<h3>Context window</h3>
+<p>The context window is how many tokens the model can see at once: your conversation, any documents, and its own replies. It's the model's working memory. Recent models handle hundreds of thousands of tokens, and some handle a million or more. Nothing carries over between separate chats unless the product adds a memory feature, which saves notes and feeds them back in. The weights never change.</p>
+<h3>Temperature: how random the picks are</h3>
+<p>When the model picks the next token, <strong>temperature</strong> controls how adventurous it is. Low temperature almost always takes the top choice, which gives safe, repetitive text. High temperature gives unlikely tokens more of a chance, which is more creative and more error-prone. Try it on your trained tiny model:</p>
+<div data-widget="temperature"></div>
+<h3>"Is it really thinking?"</h3>
+<p>This one is genuinely debated, and a good answer admits that. Mechanically, it's next-token prediction. But predicting the next token well across all kinds of text seems to require building internal representations of grammar, facts, and reasoning steps. Researchers in a field called <strong>interpretability</strong> look inside models to find those representations. A fair summary: it's "just" prediction, but prediction at this scale turns out to need a lot of structure inside.</p>`,
+    meetup: "LLMs hallucinate because they're trained to produce likely text, not verified facts, and there's no lookup unless you give them tools or documents. They know nothing past their training cutoff, and they only remember what fits in the context window. Temperature controls how random the next-token picks are. Whether that counts as thinking is debated. It's prediction, but prediction at that scale needs a lot of internal structure.",
+    quiz: [
+      { q: "Why do LLMs hallucinate?", options: ["They're programmed to lie", "They're trained to produce likely-sounding text, not verified facts, and have no built-in fact lookup", "Their GPUs overheat", "Users type too fast"], answer: 1, why: "Next-token prediction rewards plausible text. Without a source to check, plausible and true can come apart." },
+      { q: "What does a low temperature do?", options: ["Makes the model sample more adventurously", "Makes the model stick closer to its top choice, so output is more predictable", "Cools down the servers", "Shrinks the context window"], answer: 1, why: "Low temperature sharpens the probabilities toward the top token. High temperature flattens them." },
+      { q: "What is the context window?", options: ["The model's training data", "The number of tokens the model can see at once, its working memory for the conversation", "The browser window you chat in", "The date the model was trained"], answer: 1, why: "Everything the model considers in one go, prompt, documents and its own replies, has to fit in the context window." },
+    ],
+  },
+];
+
+const FINAL_TEST = [
+  { q: "A neuron has inputs (2, 1), weights (0.5, −2) and bias 1. What is z?", options: ["0", "1", "−1", "4"], answer: 0, why: "z = (0.5 × 2) + (−2 × 1) + 1 = 1 − 2 + 1 = 0. Then sigmoid(0) = 0.5, a perfect shrug." },
+  { q: "Someone says \"just add more layers, it'll be smarter\" about a network with no activation functions. What's the flaw?", options: ["Layers must be odd in number", "Without activations, stacked layers collapse into a single linear function, so depth adds nothing", "More layers always overfit", "Nothing, they're right"], answer: 1, why: "Multiply-add composed with multiply-add is still multiply-add. The non-linearity is what makes depth useful." },
+  { q: "Put these in the order they happen in one training step: (a) update weights, (b) backpropagate, (c) forward pass, (d) compute loss", options: ["a, b, c, d", "c, d, b, a", "d, c, a, b", "b, c, d, a"], answer: 1, why: "Forward pass, then loss, then backprop to get the gradients, then the gradient descent update." },
+  { q: "Training loss keeps dropping but test loss has started rising. What's happening?", options: ["Underfitting", "Overfitting: it's memorising the training data", "The learning rate is zero", "Perfect training"], answer: 1, why: "The gap between training and test performance is the classic sign of overfitting." },
+  { q: "The loss is jumping around wildly and sometimes shoots up. What's the first thing to try?", options: ["Lower the learning rate", "Raise the learning rate", "Delete the test set", "Remove the bias"], answer: 0, why: "Wild swings usually mean the steps are too big and overshoot the valley." },
+  { q: "In backprop, the output neuron's blame (sigmoid output with cross-entropy) is:", options: ["truth − 1", "prediction − truth", "prediction × truth", "always 1"], answer: 1, why: "That neat result is why sigmoid and cross-entropy are paired. In nn.js it's delta = p − y." },
+  { q: "What actually goes into an LLM's first layer?", options: ["Raw letters", "Token IDs, each converted to a learned embedding vector", "Whole sentences as strings", "Pixels"], answer: 1, why: "Text becomes tokens, tokens become IDs, and IDs are looked up as embeddings." },
+  { q: "What problem did attention solve better than older approaches?", options: ["Making models smaller", "Letting each token pull information from any relevant earlier token, even far back, while processing in parallel", "Removing the need for training data", "Making tokens shorter"], answer: 1, why: "Attention lets \"it\" find \"the trophy\" directly, and it runs on all tokens at once, which suits GPUs." },
+  { q: "What is a base model, before fine-tuning, best described as?", options: ["A polished assistant", "A strong text continuer that isn't yet tuned to follow instructions", "A tokenizer", "A database of facts"], answer: 1, why: "Pretraining gives a next-token predictor. Fine-tuning and RLHF make it an assistant." },
+  { q: "A friend says ChatGPT \"learned from our conversation yesterday\". Most accurate reply?", options: ["Yes, it retrains after every chat", "Its weights don't change during chats. If it remembers, the product saved notes and fed them back into the context.", "Yes, the GPU remembers", "Only on weekends"], answer: 1, why: "Inference doesn't change weights. Memory features work by putting saved text into the context window." },
+  { q: "Why do LLMs make up citations that don't exist?", options: ["The model produces plausible-looking text, and a fake citation can look just as plausible as a real one", "Citations are banned from training data", "Tokens can't contain numbers", "Hallucinations only happen with images"], answer: 0, why: "Next-token prediction rewards text that looks right. Without a lookup, it can't tell a real reference from a likely-looking one." },
+  { q: "Roughly how many words fit in 1,000 tokens of English?", options: ["About 100", "About 750", "About 4,000", "Exactly 1,000"], answer: 1, why: "About ¾ of a word per token, so roughly 750 words." },
+  { q: "Who popularised backpropagation in 1986, and later shared the 2024 Nobel Prize in Physics?", options: ["Alan Turing", "Geoffrey Hinton, with Rumelhart and Williams", "Elon Musk", "Marvin Minsky"], answer: 1, why: "Rumelhart, Hinton and Williams popularised backprop in 1986. Hinton shared the 2024 Nobel Prize in Physics with John Hopfield." },
+  { q: "What's the difference between parameters and hyperparameters?", options: ["Same thing", "Parameters (weights and biases) are learned. Hyperparameters (learning rate, layer sizes) are chosen by people.", "Hyperparameters are just bigger parameters", "Parameters are chosen and hyperparameters are learned"], answer: 1, why: "The network learns its parameters. You set the hyperparameters before training." },
+  { q: "Why does temperature 0.2 give more repetitive text than 1.5?", options: ["It uses fewer tokens", "Low temperature sharpens the probabilities so the top choice nearly always wins", "It changes the weights", "It shrinks the vocabulary"], answer: 1, why: "Dividing the scores by a small temperature exaggerates the gaps between them, so the top token dominates." },
+];
+
+// =====================================================================
+//  Widgets
+// =====================================================================
+const WIDGETS = {};
+
+// ---- One neuron, set by hand ---------------------------------------
+WIDGETS.neuron = (el, token) => {
+  el.className = "widget";
+  el.innerHTML = `
+    <div class="widget-title">Set one neuron's weights by hand</div>
+    <p class="widget-note">The background shows the neuron's answer: teal means "yes, class 1" and rust means "no, class 0". Get every dot on matching colour.</p>
+    <div class="two-col">
+      <canvas class="plot" aria-label="Neuron decision plot"></canvas>
+      <div>
+        <div class="seg" role="group" aria-label="Dataset">
+          <button type="button" data-ds="blobs" aria-pressed="true">Two groups</button>
+          <button type="button" data-ds="xor" aria-pressed="false">Four corners</button>
+        </div>
+        <div style="margin-top:12px">
+          <div class="slider-row"><label for="nw1">w₁</label><input id="nw1" type="range" min="-6" max="6" step="0.1" value="-1.5"><output></output></div>
+          <div class="slider-row"><label for="nw2">w₂</label><input id="nw2" type="range" min="-6" max="6" step="0.1" value="1"><output></output></div>
+          <div class="slider-row"><label for="nb">bias</label><input id="nb" type="range" min="-3" max="3" step="0.1" value="0.5"><output></output></div>
+        </div>
+        <div class="readout" style="margin-top:10px"></div>
+        <div class="btn-row" style="margin-top:12px">
+          <button class="btn small primary" type="button" data-act="train">Let the computer learn it</button>
+          <button class="btn small" type="button" data-act="reset">Reset</button>
+        </div>
+        <p class="hint-line" data-hint></p>
+      </div>
+    </div>`;
+  const canvas = $("canvas", el);
+  const sliders = { w1: $("#nw1", el), w2: $("#nw2", el), b: $("#nb", el) };
+  const readout = $(".readout", el);
+  const hint = $("[data-hint]", el);
+  let ds = "blobs";
+  const net = new NeuralNetwork([2, 1], { seed: 2 });
+  const makePts = () => DATASETS[ds].make(60, 0.05, makeRandom(ds === "blobs" ? 11 : 12));
+  let pts = makePts();
+  let training = false;
+
+  function syncNet() {
+    net.weights[0][0][0] = +sliders.w1.value;
+    net.weights[0][0][1] = +sliders.w2.value;
+    net.biases[0][0] = +sliders.b.value;
+  }
+  function draw() {
+    for (const k in sliders) sliders[k].nextElementSibling.textContent = fmt(+sliders[k].value, 1);
+    syncNet();
+    drawBoundary(canvas, (x) => net.predict(x), pts);
+    const right = Math.round(net.accuracy(pts.map((p) => p.x), pts.map((p) => p.y)) * pts.length);
+    const p0 = pts[0];
+    const z = net.weights[0][0][0] * p0.x[0] + net.weights[0][0][1] * p0.x[1] + net.biases[0][0];
+    readout.textContent =
+      `z = ${fmt(+sliders.w1.value, 1)}·x₁ + ${signed(+sliders.w2.value, 1)}·x₂ + ${signed(+sliders.b.value, 1)}\n` +
+      `e.g. point (${fmt(p0.x[0])}, ${fmt(p0.x[1])}): z = ${fmt(z)} → sigmoid → ${fmt(sigmoid(z))}\n` +
+      `correct: ${right} of ${pts.length}` + (right === pts.length ? "  ✓ perfect" : "");
+  }
+  for (const k in sliders) sliders[k].addEventListener("input", () => { training = false; draw(); });
+  $$("[data-ds]", el).forEach((b) => b.addEventListener("click", () => {
+    ds = b.dataset.ds;
+    $$("[data-ds]", el).forEach((x) => x.setAttribute("aria-pressed", x === b));
+    pts = makePts(); training = false;
+    hint.textContent = DATASETS[ds].hint;
+    draw();
+  }));
+  $("[data-act=reset]", el).addEventListener("click", () => {
+    training = false; sliders.w1.value = -1.5; sliders.w2.value = 1; sliders.b.value = 0.5; draw();
+  });
+  $("[data-act=train]", el).addEventListener("click", () => {
+    if (training) return;
+    training = true;
+    const rand = makeRandom(5);
+    let epochs = 0;
+    const tick = () => {
+      if (!training || token !== viewToken) return;
+      syncNet();
+      for (let k = 0; k < 3; k++) net.trainEpoch(pts.map((p) => p.x), pts.map((p) => p.y), 0.5, 10, rand);
+      const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+      sliders.w1.value = clamp(net.weights[0][0][0], -6, 6);
+      sliders.w2.value = clamp(net.weights[0][0][1], -6, 6);
+      sliders.b.value = clamp(net.biases[0][0], -3, 3);
+      draw();
+      if (++epochs < 120) requestAnimationFrame(tick);
+      else {
+        training = false;
+        hint.textContent = ds === "xor"
+          ? "Gradient descent gave up too. No straight line can solve this. That's the XOR problem."
+          : "Gradient descent found weights that split the groups.";
+      }
+    };
+    tick();
+  });
+  hint.textContent = DATASETS[ds].hint;
+  draw();
+};
+
+// ---- Activation function plot --------------------------------------
+WIDGETS.activation = (el) => {
+  el.className = "widget";
+  el.innerHTML = `
+    <div class="widget-title">Try the activation functions</div>
+    <div class="seg" role="group" aria-label="Activation function">
+      <button type="button" data-f="sigmoid" aria-pressed="true">Sigmoid</button>
+      <button type="button" data-f="tanh" aria-pressed="false">Tanh</button>
+      <button type="button" data-f="relu" aria-pressed="false">ReLU</button>
+      <button type="button" data-f="none" aria-pressed="false">None</button>
+    </div>
+    <canvas class="wide" style="margin-top:12px" aria-label="Activation function graph"></canvas>
+    <div class="slider-row"><label for="az">z</label><input id="az" type="range" min="-5" max="5" step="0.1" value="1.5"><output></output></div>
+    <div class="readout"></div>`;
+  const canvas = $("canvas", el), slider = $("#az", el), readout = $(".readout", el);
+  let f = "sigmoid";
+  const fn = (z) => (f === "none" ? z : ACTIVATIONS[f].f(z));
+  const desc = { sigmoid: "1 / (1 + e^(−z))", tanh: "tanh(z)", relu: "max(0, z)", none: "z (no bend)" };
+  function draw() {
+    const { ctx, w, h } = setupCanvas(canvas, 200);
+    const C = colors();
+    ctx.clearRect(0, 0, w, h);
+    const yMin = -1.5, yMax = 1.5;
+    const X = (z) => ((z + 5) / 10) * w, Y = (v) => h - ((v - yMin) / (yMax - yMin)) * h;
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, Y(0)); ctx.lineTo(w, Y(0)); ctx.moveTo(X(0), 0); ctx.lineTo(X(0), h);
+    ctx.moveTo(0, Y(1)); ctx.lineTo(w, Y(1)); ctx.moveTo(0, Y(-1)); ctx.lineTo(w, Y(-1)); ctx.stroke();
+    ctx.fillStyle = C.muted; ctx.font = "11px monospace";
+    ctx.fillText("1", X(0) + 4, Y(1) - 3); ctx.fillText("−1", X(0) + 4, Y(-1) + 12); ctx.fillText("z", w - 10, Y(0) - 4);
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
+    ctx.strokeStyle = C.posHex; ctx.lineWidth = 2.5; ctx.beginPath();
+    for (let px = 0; px <= w; px++) { const z = (px / w) * 10 - 5; const y = Y(fn(z)); px ? ctx.lineTo(px, y) : ctx.moveTo(px, y); }
+    ctx.stroke(); ctx.restore();
+    const z = +slider.value, v = fn(z);
+    ctx.fillStyle = C.negHex; ctx.beginPath(); ctx.arc(X(z), Y(Math.max(yMin, Math.min(yMax, v))), 6, 0, Math.PI * 2); ctx.fill();
+    slider.nextElementSibling.textContent = fmt(z, 1);
+    readout.textContent = `f(z) = ${desc[f]}\nf(${fmt(z, 1)}) = ${fmt(v, 3)}`;
+  }
+  slider.addEventListener("input", draw);
+  $$("[data-f]", el).forEach((b) => b.addEventListener("click", () => {
+    f = b.dataset.f; $$("[data-f]", el).forEach((x) => x.setAttribute("aria-pressed", x === b)); draw();
+  }));
+  draw();
+};
+
+// ---- Forward pass walk-through --------------------------------------
+WIDGETS.forward = (el) => {
+  el.className = "widget";
+  const net = new NeuralNetwork([2, 2, 1], { activation: "tanh" });
+  net.weights = [[[1.0, -1.0], [1.0, 1.0]], [[2.0, -1.0]]];
+  net.biases = [[0.0, 0.5], [-0.5]];
+  el.innerHTML = `
+    <div class="widget-title">A forward pass, number by number</div>
+    <div class="slider-row"><label for="fx1">x₁</label><input id="fx1" type="range" min="-1" max="1" step="0.05" value="0.5"><output></output></div>
+    <div class="slider-row"><label for="fx2">x₂</label><input id="fx2" type="range" min="-1" max="1" step="0.05" value="-0.5"><output></output></div>
+    <div style="overflow-x:auto"><svg viewBox="0 0 420 210" style="width:100%;min-width:340px;display:block;margin:8px 0" aria-label="Network diagram"></svg></div>
+    <div class="readout"></div>`;
+  const svg = $("svg", el), readout = $(".readout", el);
+  const sx1 = $("#fx1", el), sx2 = $("#fx2", el);
+  const pos = { in: [[50, 55], [50, 155]], hid: [[210, 55], [210, 155]], out: [[370, 105]] };
+  function draw() {
+    const x = [+sx1.value, +sx2.value];
+    sx1.nextElementSibling.textContent = fmt(x[0]); sx2.nextElementSibling.textContent = fmt(x[1]);
+    const { activations, zs } = net.forward(x);
+    const wire = (a, b, wv) => {
+      const col = wv >= 0 ? "var(--pos)" : "var(--neg)";
+      const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2 + (a[1] < b[1] ? -6 : a[1] > b[1] ? 6 : -6);
+      return `<line x1="${a[0] + 24}" y1="${a[1]}" x2="${b[0] - 24}" y2="${b[1]}" stroke="${col}" stroke-width="${1 + Math.abs(wv) * 1.6}" opacity="0.8"/>
+        <text x="${mx}" y="${my}" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="${col}" paint-order="stroke" stroke="var(--surface)" stroke-width="4">${fmt(wv, 1)}</text>`;
+    };
+    const node = (p, val, label) => `<circle cx="${p[0]}" cy="${p[1]}" r="24" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+      <text x="${p[0]}" y="${p[1] + 4}" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">${fmt(val)}</text>
+      <text x="${p[0]}" y="${p[1] - 30}" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--muted)">${label}</text>`;
+    let s = "";
+    for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) s += wire(pos.in[i], pos.hid[j], net.weights[0][j][i]);
+    for (let i = 0; i < 2; i++) s += wire(pos.hid[i], pos.out[0], net.weights[1][0][i]);
+    s += node(pos.in[0], x[0], "x₁") + node(pos.in[1], x[1], "x₂");
+    s += node(pos.hid[0], activations[1][0], "h₁ · b " + fmt(net.biases[0][0], 1)) + node(pos.hid[1], activations[1][1], "h₂ · b " + fmt(net.biases[0][1], 1));
+    s += node(pos.out[0], activations[2][0], "out · b " + fmt(net.biases[1][0], 1));
+    svg.innerHTML = s;
+    const h = activations[1];
+    const line = (name, w, inputs, inNames, b, z, act, a) =>
+      `${name}: z = ${w.map((wv, i) => `(${fmt(wv, 1)} × ${fmt(inputs[i])})`).join(" + ")} + ${signed(b, 1)} = ${fmt(z)}  → ${act} → ${fmt(a)}`;
+    readout.textContent =
+      line("h₁ ", net.weights[0][0], x, ["x₁", "x₂"], net.biases[0][0], zs[0][0], "tanh", h[0]) + "\n" +
+      line("h₂ ", net.weights[0][1], x, ["x₁", "x₂"], net.biases[0][1], zs[0][1], "tanh", h[1]) + "\n" +
+      line("out", net.weights[1][0], h, ["h₁", "h₂"], net.biases[1][0], zs[1][0], "sigmoid", activations[2][0]) + "\n\n" +
+      `Answer: ${fmt(activations[2][0] * 100, 0)}% chance of class 1`;
+  }
+  sx1.addEventListener("input", draw); sx2.addEventListener("input", draw);
+  draw();
+};
+
+// ---- Loss explorer -----------------------------------------------------
+WIDGETS.loss = (el) => {
+  el.className = "widget";
+  el.innerHTML = `
+    <div class="widget-title">Feel the loss</div>
+    <p class="widget-note">Set what the network predicted and what the truth was.</p>
+    <div class="btn-row" style="margin-bottom:8px"><span class="muted" style="font-size:.9rem">Truth:</span>
+      <div class="seg" role="group" aria-label="Truth"><button type="button" data-t="1" aria-pressed="true">Class 1 (teal)</button><button type="button" data-t="0" aria-pressed="false">Class 0 (rust)</button></div></div>
+    <div class="slider-row"><label for="lp">predicted</label><input id="lp" type="range" min="0.01" max="0.99" step="0.01" value="0.8"><output></output></div>
+    <div class="two-col" style="align-items:center">
+      <div><div class="muted" style="font-size:.85rem">Loss</div><div class="big-number" data-loss></div><div class="readout" style="margin-top:8px" data-calc></div></div>
+      <canvas class="wide" aria-label="Loss curve"></canvas>
+    </div>`;
+  const slider = $("#lp", el), canvas = $("canvas", el);
+  let truth = 1;
+  function draw() {
+    const p = +slider.value;
+    slider.nextElementSibling.textContent = fmt(p * 100, 0) + "%";
+    const q = truth ? p : 1 - p;
+    const loss = -Math.log(q);
+    $("[data-loss]", el).textContent = fmt(loss, 3);
+    $("[data-calc]", el).textContent = `prob. on right answer = ${fmt(q)}\nloss = −log(${fmt(q)}) = ${fmt(loss, 3)}`;
+    const { ctx, w, h } = setupCanvas(canvas, 160);
+    const C = colors();
+    ctx.clearRect(0, 0, w, h);
+    const maxL = 4.7, X = (v) => 10 + v * (w - 20), Y = (l) => h - 14 - (l / maxL) * (h - 24);
+    ctx.strokeStyle = C.line; ctx.beginPath(); ctx.moveTo(10, Y(0)); ctx.lineTo(w - 10, Y(0)); ctx.stroke();
+    ctx.fillStyle = C.muted; ctx.font = "11px monospace";
+    ctx.fillText("predicted 0%", 10, h - 1); ctx.fillText("100%", w - 40, h - 1);
+    ctx.strokeStyle = truth ? C.posHex : C.negHex; ctx.lineWidth = 2.5; ctx.beginPath();
+    for (let i = 0; i <= 100; i++) { const v = 0.01 + (i / 100) * 0.98; const l = -Math.log(truth ? v : 1 - v); i ? ctx.lineTo(X(v), Y(l)) : ctx.moveTo(X(v), Y(l)); }
+    ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(X(p), Y(loss), 6, 0, Math.PI * 2); ctx.fill();
+  }
+  slider.addEventListener("input", draw);
+  $$("[data-t]", el).forEach((b) => b.addEventListener("click", () => {
+    truth = +b.dataset.t; $$("[data-t]", el).forEach((x) => x.setAttribute("aria-pressed", x === b)); draw();
+  }));
+  draw();
+};
+
+// ---- Gradient descent on a 1D landscape -------------------------------
+WIDGETS.descent = (el, token) => {
+  el.className = "widget";
+  el.innerHTML = `
+    <div class="widget-title">Roll downhill</div>
+    <p class="widget-note">One weight, w. The curve is the loss for each value of w. Tap the curve to drop the ball somewhere new.</p>
+    <canvas class="wide" style="cursor:crosshair" aria-label="Loss landscape"></canvas>
+    <div class="btn-row" style="margin:10px 0">
+      <span class="muted" style="font-size:.9rem">Learning rate:</span>
+      <div class="seg" role="group" aria-label="Learning rate">
+        <button type="button" data-lr="0.02" aria-pressed="false">0.02</button>
+        <button type="button" data-lr="0.1" aria-pressed="true">0.1</button>
+        <button type="button" data-lr="0.5" aria-pressed="false">0.5</button>
+        <button type="button" data-lr="1.6" aria-pressed="false">1.6</button>
+      </div>
+    </div>
+    <div class="btn-row"><button class="btn small primary" type="button" data-act="step">One step</button><button class="btn small" type="button" data-act="run">Run 30 steps</button><button class="btn small" type="button" data-act="reset">Reset</button></div>
+    <div class="readout" style="margin-top:10px"></div>`;
+  const f = (w) => 0.02 * w ** 4 - 0.4 * w ** 2 + 0.3 * w + 3;
+  const df = (w) => 0.08 * w ** 3 - 0.8 * w + 0.3;
+  const canvas = $("canvas", el), readout = $(".readout", el);
+  let w = 4.4, lr = 0.1, trail = [], msg = "", steps = 0, running = false;
+  function draw() {
+    const { ctx, w: W, h: H } = setupCanvas(canvas, 220);
+    const C = colors();
+    ctx.clearRect(0, 0, W, H);
+    const X = (v) => ((v + 5.2) / 10.4) * W, Y = (l) => H - 12 - (l / 6) * (H - 24);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.beginPath();
+    for (let px = 0; px <= W; px++) { const v = (px / W) * 10.4 - 5.2; px ? ctx.lineTo(px, Y(f(v))) : ctx.moveTo(px, Y(f(v))); }
+    ctx.stroke();
+    ctx.fillStyle = C.muted; ctx.font = "11px monospace"; ctx.fillText("loss", 4, 12); ctx.fillText("w →", W - 30, H - 2);
+    ctx.strokeStyle = C.negHex; ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.beginPath();
+    trail.forEach((v, i) => (i ? ctx.lineTo(X(v), Y(f(v))) : ctx.moveTo(X(v), Y(f(v))))); ctx.stroke(); ctx.setLineDash([]);
+    if (Math.abs(w) <= 5.2) { ctx.fillStyle = C.negHex; ctx.beginPath(); ctx.arc(X(w), Y(f(w)), 8, 0, Math.PI * 2); ctx.fill(); }
+    const slope = df(w);
+    readout.textContent = `step ${steps}   w = ${fmt(w)}   loss = ${fmt(f(w))}   slope = ${fmt(slope)}\n` +
+      `next: w = ${fmt(w)} − ${lr} × ${signed(slope)} = ${fmt(w - lr * slope)}` + (msg ? "\n" + msg : "");
+  }
+  function step() {
+    if (Math.abs(w) > 5.2) return;
+    trail.push(w);
+    w = w - lr * df(w); steps++;
+    msg = "";
+    if (Math.abs(w) > 5.2) msg = "Overshot right off the chart. That learning rate is far too big. Press Reset.";
+    else if (Math.abs(df(w)) < 0.01) msg = w > 0 ? "Settled in the shallow valley (a local minimum). The deeper one is to the left." : "Settled in the deepest valley.";
+    draw();
+  }
+  $$("[data-lr]", el).forEach((b) => b.addEventListener("click", () => {
+    lr = +b.dataset.lr; $$("[data-lr]", el).forEach((x) => x.setAttribute("aria-pressed", x === b)); draw();
+  }));
+  $("[data-act=step]", el).addEventListener("click", step);
+  $("[data-act=reset]", el).addEventListener("click", () => { running = false; w = 4.4; trail = []; steps = 0; msg = ""; draw(); });
+  $("[data-act=run]", el).addEventListener("click", () => {
+    if (running) return; running = true; let n = 0;
+    const tick = () => { if (!running || token !== viewToken) return; step(); if (++n < 30 && Math.abs(w) <= 5.2) setTimeout(tick, reducedMotion ? 0 : 90); else running = false; };
+    tick();
+  });
+  canvas.addEventListener("click", (e) => {
+    const r = canvas.getBoundingClientRect();
+    w = ((e.clientX - r.left) / r.width) * 10.4 - 5.2; trail = []; steps = 0; msg = ""; running = false; draw();
+  });
+  draw();
+};
+
+// ---- Backprop on one neuron, one example ------------------------------
+WIDGETS.backprop = (el) => {
+  el.className = "widget";
+  el.innerHTML = `
+    <div class="widget-title">Watch one neuron learn one example</div>
+    <p class="widget-note">Example: inputs x = (1.0, 0.5), and the truth is y = 1. Learning rate 0.5. Each press runs the forward pass, the backward pass, and the update.</p>
+    <div class="btn-row"><button class="btn small primary" type="button" data-act="step">Take one training step</button><button class="btn small" type="button" data-act="reset">Reset</button></div>
+    <div class="readout" style="margin-top:10px"></div>
+    <canvas class="wide" style="margin-top:10px" aria-label="Loss over steps"></canvas>`;
+  const x = [1.0, 0.5], y = 1, lr = 0.5;
+  let w, b, history, steps;
+  const readout = $(".readout", el), canvas = $("canvas", el);
+  function reset() { w = [-0.5, 0.3]; b = 0; history = []; steps = 0; render(null); }
+  function forward() { const z = w[0] * x[0] + w[1] * x[1] + b; const p = sigmoid(z); return { z, p, loss: -Math.log(p) }; }
+  function render(last) {
+    const { z, p, loss } = forward();
+    let s = `Step ${steps}\n\nFORWARD\n  z = (${fmt(w[0])} × 1.0) + (${fmt(w[1])} × 0.5) + ${signed(b)} = ${fmt(z)}\n  p = sigmoid(${fmt(z)}) = ${fmt(p, 3)}\n  loss = −log(${fmt(p, 3)}) = ${fmt(loss, 3)}`;
+    if (last) {
+      s += `\n\nBACKWARD (from the previous step)\n  blame at output   = p − y = ${fmt(last.p, 3)} − 1 = ${fmt(last.d, 3)}\n` +
+        `  slope for w₁     = blame × x₁ = ${fmt(last.d, 3)} × 1.0 = ${fmt(last.d * 1.0, 3)}\n` +
+        `  slope for w₂     = blame × x₂ = ${fmt(last.d, 3)} × 0.5 = ${fmt(last.d * 0.5, 3)}\n` +
+        `  slope for bias   = blame      = ${fmt(last.d, 3)}\n\nUPDATE (w = w − 0.5 × slope)\n` +
+        `  w₁: ${fmt(last.w[0])} → ${fmt(w[0])}    w₂: ${fmt(last.w[1])} → ${fmt(w[1])}    b: ${fmt(last.b)} → ${fmt(b)}`;
+    } else s += "\n\nPress the button to run backprop and update the weights.";
+    readout.textContent = s;
+    history.push(loss);
+    drawLossChart(canvas, [{ data: history, color: colors().negHex }], { height: 90, xLabel: "loss after each step", maxY: Math.max(1.2, history[0] * 1.05) });
+  }
+  $("[data-act=step]", el).addEventListener("click", () => {
+    const { p } = forward();
+    const d = p - y;
+    const last = { p, d, w: w.slice(), b };
+    w = [w[0] - lr * d * x[0], w[1] - lr * d * x[1]]; b = b - lr * d; steps++;
+    render(last);
+  });
+  $("[data-act=reset]", el).addEventListener("click", reset);
+  reset();
+};
+
+// ---- Tokenizer -----------------------------------------------------------
+WIDGETS.tokenizer = (el) => {
+  el.className = "widget";
+  el.innerHTML = `
+    <div class="widget-title">A real BPE tokenizer</div>
+    <p class="widget-note">Trained on the same sentences the tiny language model reads. A "·" marks a space attached to the start of a token.</p>
+    <div class="slider-row"><label for="tm">merges</label><input id="tm" type="range" min="0" max="200" step="1" value="80"><output></output></div>
+    <label for="tt" class="muted" style="font-size:.85rem">Your text</label>
+    <input id="tt" type="text" value="The network learns armwrestling in Edmonton.">
+    <div class="tokens" aria-live="polite"></div>
+    <div class="readout" data-stats style="margin-bottom:10px"></div>
+    <div class="muted" style="font-size:.85rem;margin-bottom:4px">Merges it learned, most frequent first:</div>
+    <div class="merge-list"></div>`;
+  const slider = $("#tm", el), input = $("#tt", el);
+  const full = trainBPE(TRAINING_TEXT, 200);
+  const show = (t) => t.replace(/ /g, "·");
+  function draw() {
+    const n = +slider.value;
+    slider.nextElementSibling.textContent = n;
+    const model = { merges: full.merges.slice(0, n), vocab: new Map() };
+    const chars = Array.from(new Set(Array.from(TRAINING_TEXT.toLowerCase()))).sort();
+    chars.forEach((c) => model.vocab.set(c, model.vocab.size));
+    model.merges.forEach(({ a, b }) => { if (!model.vocab.has(a + b)) model.vocab.set(a + b, model.vocab.size); });
+    const toks = tokenize(input.value, model);
+    $(".tokens", el).innerHTML = toks.map((t) => `<span class="tok">${escapeHtml(show(t.text))}<small>${t.id === null ? "?" : t.id}</small></span>`).join("");
+    const letters = input.value.length;
+    $("[data-stats]", el).textContent = `${letters} characters → ${toks.length} tokens   (vocabulary: ${model.vocab.size} tokens)` +
+      (toks.some((t) => t.id === null) ? "\n? = a character it never saw in training. Real tokenizers work on bytes, so nothing is ever unknown." : "");
+    $(".merge-list", el).innerHTML = model.merges.length
+      ? model.merges.map((m, i) => `${i + 1}. "${escapeHtml(show(m.a))}" + "${escapeHtml(show(m.b))}" → "${escapeHtml(show(m.a + m.b))}"  (${m.count}×)`).join("<br>")
+      : "No merges yet. Every character is its own token.";
+  }
+  slider.addEventListener("input", draw); input.addEventListener("input", draw);
+  draw();
+};
+function escapeHtml(s) { return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+// ---- Embedding map (illustration) -----------------------------------------
+WIDGETS.embedding = (el) => {
+  el.className = "widget";
+  const words = [
+    ["dog", 18, 28], ["puppy", 23, 22], ["cat", 12, 20], ["kitten", 17, 14], ["horse", 28, 33],
+    ["Edmonton", 72, 20], ["Calgary", 80, 26], ["Red Deer", 74, 31], ["Toronto", 86, 15],
+    ["winter", 30, 72], ["snow", 24, 80], ["cold", 36, 82], ["summer", 46, 66],
+    ["arm", 70, 70], ["wrist", 76, 76], ["elbow", 66, 79], ["grip", 80, 66], ["pull", 86, 82],
+  ];
+  el.innerHTML = `
+    <div class="widget-title">A map of meaning</div>
+    <p class="widget-note">Tap a word to highlight its 3 nearest neighbours.</p>
+    <div style="overflow-x:auto"><svg viewBox="0 0 100 100" style="width:100%;max-width:520px;min-width:300px;display:block;margin:0 auto;aspect-ratio:1;background:var(--sunken);border-radius:8px" aria-label="Embedding map"></svg></div>
+    <p class="illustration-note">Illustration with hand-placed positions. Real embeddings have hundreds or thousands of dimensions and can't be drawn flat, but nearby still means similar.</p>`;
+  const svg = $("svg", el);
+  let sel = "Edmonton";
+  function draw() {
+    const s = words.find((w) => w[0] === sel);
+    const near = words.filter((w) => w !== s).map((w) => ({ w, d: Math.hypot(w[1] - s[1], w[2] - s[2]) })).sort((a, b) => a.d - b.d).slice(0, 3).map((o) => o.w[0]);
+    svg.innerHTML = near.map((n) => { const w = words.find((x) => x[0] === n); return `<line x1="${s[1]}" y1="${s[2]}" x2="${w[1]}" y2="${w[2]}" stroke="var(--pos)" stroke-width="0.5"/>`; }).join("") +
+      words.map((w) => {
+        const on = w[0] === sel, nb = near.includes(w[0]);
+        return `<g data-w="${w[0]}" style="cursor:pointer"><circle cx="${w[1]}" cy="${w[2]}" r="${on ? 2.2 : 1.6}" fill="${on ? "var(--neg)" : nb ? "var(--pos)" : "var(--muted)"}"/>
+          <text x="${w[1]}" y="${w[2] - 3}" text-anchor="middle" font-size="3.6" font-family="var(--body)" fill="${on || nb ? "var(--ink)" : "var(--muted)"}" font-weight="${on ? 600 : 400}">${w[0]}</text></g>`;
+      }).join("");
+    $$("g[data-w]", svg).forEach((g) => g.addEventListener("click", () => { sel = g.dataset.w; draw(); }));
+  }
+  draw();
+};
+
+// ---- Tiny language model (shared across lessons) -------------------------
+const LM = { model: null, running: false, history: [], ema: null, sample: "", lastEval: null };
+function lmModel() {
+  if (!LM.model) { LM.model = new TinyLanguageModel(TRAINING_TEXT, { seed: 42 }); LM.lastEval = LM.model.evaluate(); LM.history = [LM.lastEval]; }
+  return LM.model;
+}
+const LM_MAX_STEPS = 150000;
+function lmTrainChunk() {
+  const m = lmModel();
+  const lr = m.steps < 40000 ? 0.05 : m.steps < 90000 ? 0.025 : 0.012;
+  const loss = m.train(500, lr);
+  LM.ema = LM.ema === null ? loss : LM.ema * 0.85 + loss * 0.15;
+  if (m.steps % 5000 === 0) { LM.lastEval = m.evaluate(); LM.history.push(LM.lastEval); }
+}
+
+WIDGETS.lm = (el, token) => {
+  el.className = "widget";
+  el.innerHTML = `
+    <div class="widget-title">Train a language model in your browser</div>
+    <div class="btn-row"><button class="btn small primary" type="button" data-act="train">Train</button><button class="btn small" type="button" data-act="reset">Reset to random</button></div>
+    <div class="stats">
+      <div class="stat"><span>Training steps</span><b data-s="steps">0</b></div>
+      <div class="stat"><span>Loss</span><b data-s="loss">–</b></div>
+      <div class="stat"><span>Parameters</span><b data-s="params">–</b></div>
+    </div>
+    <canvas class="wide" aria-label="Loss over training"></canvas>
+    <div class="muted" style="font-size:.85rem;margin:10px 0 4px">What it writes, starting from "the ":</div>
+    <div class="sample" data-sample></div>
+    <div style="margin-top:14px"><label for="lmp" class="muted" style="font-size:.85rem">Type a start. These are its top guesses for the next character:</label>
+      <input id="lmp" type="text" value="the netw" maxlength="60" autocomplete="off"></div>
+    <div class="bars" data-bars></div>
+    <p class="illustration-note">"·" means a space. The model reads only the last 4 characters you type.</p>`;
+  const canvas = $("canvas", el), btn = $("[data-act=train]", el), probe = $("#lmp", el);
+  const sampleRand = makeRandom(99);
+  let frame = 0;
+  function renderSample() {
+    const m = lmModel();
+    LM.sample = m.generate("the ", 90, 0.8, sampleRand);
+    $("[data-sample]", el).innerHTML = `<span class="prompt">the </span>${escapeHtml(LM.sample.slice(4))}`;
+  }
+  function renderProbe() {
+    const g = lmModel().nextGuesses(probe.value, 1, 8);
+    $("[data-bars]", el).innerHTML = g.map((o) => `<div class="bar"><span>"${o.char === " " ? "·" : escapeHtml(o.char)}"</span><div class="bar-track"><div class="bar-fill" style="width:${(o.p * 100).toFixed(1)}%"></div></div><span class="p">${fmt(o.p * 100, 1)}%</span></div>`).join("");
+  }
+  function renderStats() {
+    const m = lmModel();
+    $("[data-s=steps]", el).textContent = m.steps.toLocaleString();
+    $("[data-s=loss]", el).textContent = fmt(LM.ema === null ? LM.lastEval : LM.ema, 3);
+    $("[data-s=params]", el).textContent = m.parameterCount().toLocaleString();
+    drawLossChart(canvas, [{ data: LM.history, color: colors().posHex }], { height: 100, maxY: 3.5, xLabel: "loss on the full text, every 5,000 steps" });
+    btn.textContent = LM.running ? "Pause" : m.steps >= LM_MAX_STEPS ? "Fully trained" : m.steps ? "Keep training" : "Train";
+    btn.disabled = m.steps >= LM_MAX_STEPS && !LM.running;
+  }
+  function loop() {
+    if (!LM.running || token !== viewToken) { LM.running = false; renderStats(); return; }
+    lmTrainChunk();
+    frame++;
+    renderStats();
+    if (frame % 8 === 0) { renderSample(); renderProbe(); }
+    if (lmModel().steps >= LM_MAX_STEPS) { LM.running = false; renderSample(); renderProbe(); renderStats(); return; }
+    requestAnimationFrame(loop);
+  }
+  btn.addEventListener("click", () => { LM.running = !LM.running; if (LM.running) loop(); else renderStats(); });
+  $("[data-act=reset]", el).addEventListener("click", () => {
+    LM.running = false; LM.model = null; LM.ema = null; lmModel(); renderStats(); renderSample(); renderProbe();
+  });
+  probe.addEventListener("input", renderProbe);
+  renderStats(); renderSample(); renderProbe();
+};
+
+WIDGETS.temperature = (el, token) => {
+  el.className = "widget";
+  el.innerHTML = `
+    <div class="widget-title">Temperature on your tiny model</div>
+    <p class="widget-note" data-status></p>
+    <div class="slider-row"><label for="tmp">temp</label><input id="tmp" type="range" min="0.1" max="2" step="0.1" value="0.8"><output></output></div>
+    <div class="btn-row" style="margin:8px 0"><button class="btn small primary" type="button" data-act="gen">Write 3 samples</button><button class="btn small" type="button" data-act="train" hidden>Train it first (about 10 seconds)</button></div>
+    <div class="bars" data-bars></div>
+    <div data-out style="display:grid;gap:8px;margin-top:10px"></div>`;
+  const slider = $("#tmp", el), trainBtn = $("[data-act=train]", el), status = $("[data-status]", el);
+  const rand = makeRandom(1234);
+  function update() {
+    const m = lmModel();
+    slider.nextElementSibling.textContent = fmt(+slider.value, 1);
+    const trained = m.steps >= 60000;
+    trainBtn.hidden = trained;
+    status.textContent = trained
+      ? `Trained for ${m.steps.toLocaleString()} steps. Below: next-character odds after "the net" at this temperature.`
+      : `This model has only trained for ${m.steps.toLocaleString()} steps, so its output is still rough. Train it in lesson 12 or press the button.`;
+    const g = m.nextGuesses("the net", +slider.value, 5);
+    $("[data-bars]", el).innerHTML = g.map((o) => `<div class="bar"><span>"${o.char === " " ? "·" : escapeHtml(o.char)}"</span><div class="bar-track"><div class="bar-fill" style="width:${(o.p * 100).toFixed(1)}%"></div></div><span class="p">${fmt(o.p * 100, 1)}%</span></div>`).join("");
+  }
+  slider.addEventListener("input", update);
+  $("[data-act=gen]", el).addEventListener("click", () => {
+    const m = lmModel(), t = +slider.value;
+    $("[data-out]", el).innerHTML = [0, 1, 2].map(() => `<div class="sample"><span class="prompt">the </span>${escapeHtml(m.generate("the ", 80, t, rand).slice(4))}</div>`).join("");
+  });
+  trainBtn.addEventListener("click", () => {
+    trainBtn.disabled = true; LM.running = false;
+    const tick = () => {
+      if (token !== viewToken) return;
+      for (let k = 0; k < 6; k++) lmTrainChunk();
+      trainBtn.textContent = `Training… ${lmModel().steps.toLocaleString()} steps`;
+      if (lmModel().steps < 60000) requestAnimationFrame(tick); else { trainBtn.disabled = false; update(); }
+    };
+    tick();
+  });
+  update();
+};
+
+// ---- Attention illustration ----------------------------------------------
+WIDGETS.attention = (el) => {
+  el.className = "widget";
+  const words = ["The", "trophy", "didn't", "fit", "in", "the", "suitcase", "because", "it", "was", "too", "big."];
+  // Hand-picked weights for the token "it" attending to earlier tokens.
+  const weights = {
+    big: [0.02, 0.62, 0.03, 0.05, 0.01, 0.01, 0.14, 0.04, 0.08],
+    small: [0.02, 0.13, 0.03, 0.05, 0.01, 0.02, 0.62, 0.04, 0.08],
+  };
+  el.innerHTML = `
+    <div class="widget-title">Where does "it" look?</div>
+    <p class="widget-note">Change the last word and watch where <b>it</b> sends its attention. The bars show how much of each earlier word gets blended into "it".</p>
+    <div class="seg" role="group" aria-label="Ending"><button type="button" data-end="big" aria-pressed="true">…too big.</button><button type="button" data-end="small" aria-pressed="false">…too small.</button></div>
+    <div class="att-sentence"></div>
+    <div class="readout" data-explain></div>
+    <p class="illustration-note">Illustration: hand-picked numbers to show the idea. A real model has dozens of heads in each of dozens of layers, each attending differently. Also, in a GPT-style model "it" can't see the words after it, including "big". In a real model this gets resolved at later tokens, which can look back at both "it" and the ending.</p>`;
+  let end = "big";
+  function draw() {
+    const w = weights[end];
+    const ws = words.slice(); ws[11] = end + ".";
+    $(".att-sentence", el).innerHTML = ws.map((word, i) => {
+      if (i === 8) return `<div class="att-word"><button type="button" aria-pressed="true">${word}</button><span class="att-pct">query</span></div>`;
+      const a = i < 8 ? w[i] : null;
+      return `<div class="att-word"><span class="w" style="${i > 8 ? "opacity:.45" : ""}">${word}</span>${a !== null ? `<div class="att-bar" style="opacity:${0.15 + a * 1.4};transform:scaleX(${Math.max(0.15, Math.min(1, a * 1.6))})"></div><span class="att-pct">${Math.round(a * 100)}%</span>` : `<span class="att-pct">later</span>`}</div>`;
+    }).join("");
+    const top = end === "big" ? "trophy" : "suitcase";
+    $("[data-explain]", el).textContent = `"it" ≈ ${Math.round(w[1] * 100)}% trophy + ${Math.round(w[6] * 100)}% suitcase + small bits of the rest\n→ the model now treats "it" as mostly meaning "${top}".`;
+  }
+  $$("[data-end]", el).forEach((b) => b.addEventListener("click", () => {
+    end = b.dataset.end; $$("[data-end]", el).forEach((x) => x.setAttribute("aria-pressed", x === b)); draw();
+  }));
+  draw();
+};
+
+// =====================================================================
+//  The Lab
+// =====================================================================
+const LAB = {
+  dataset: "circle", noise: 0.1, hidden: [4, 4], activation: "tanh", lr: 0.1,
+  playing: false, epoch: 0, history: { train: [], test: [] }, net: null, rand: null, train: [], test: [], marker: null,
+};
+let pendingPreset = null;
+const PRESETS = {
+  "xor-none": { dataset: "xor", hidden: [], lr: 0.3, activation: "tanh" },
+  "xor-4": { dataset: "xor", hidden: [4], lr: 0.3, activation: "tanh" },
+  "circle-3": { dataset: "circle", hidden: [3], lr: 0.3, activation: "tanh" },
+};
+function labMakeData() {
+  const rand = makeRandom(2024 + Object.keys(DATASETS).indexOf(LAB.dataset));
+  const pts = DATASETS[LAB.dataset].make(240, LAB.noise, rand);
+  for (let k = pts.length - 1; k > 0; k--) { const r = Math.floor(rand() * (k + 1)); [pts[k], pts[r]] = [pts[r], pts[k]]; }
+  LAB.train = pts.slice(0, 168);
+  LAB.test = pts.slice(168).map((p) => ({ ...p, test: true }));
+}
+function labMakeNet() {
+  LAB.net = new NeuralNetwork([2, ...LAB.hidden, 1], { activation: LAB.activation, seed: 1 + Math.floor(Math.random() * 1e6) });
+  LAB.rand = makeRandom(7);
+  LAB.epoch = 0; LAB.history = { train: [], test: [] };
+  labRecord();
+}
+function labRecord() {
+  const net = LAB.net;
+  LAB.history.train.push(net.averageLoss(LAB.train.map((p) => p.x), LAB.train.map((p) => p.y)));
+  LAB.history.test.push(net.averageLoss(LAB.test.map((p) => p.x), LAB.test.map((p) => p.y)));
+  if (LAB.history.train.length > 600) {
+    LAB.history.train = LAB.history.train.filter((_, i) => i % 2 === 0);
+    LAB.history.test = LAB.history.test.filter((_, i) => i % 2 === 0);
+  }
+}
+
+function renderLab(root, token) {
+  if (pendingPreset) { Object.assign(LAB, PRESETS[pendingPreset]); pendingPreset = null; LAB.net = null; LAB.playing = false; }
+  if (!LAB.train.length) labMakeData();
+  if (!LAB.net) labMakeNet();
+  root.innerHTML = `<div class="wrap">
+    <div class="lab-head">
+      <div><div class="eyebrow">The lab · real network, real backprop</div><h1>Train a network</h1></div>
+      <p class="muted" style="margin:0;max-width:46ch">Pick a shape, build a network, press Train. Tap the board to see the forward pass for any point.</p>
+    </div>
+    <div class="toolbar">
+      <div class="btn-row"><button class="btn primary" type="button" data-act="play">Train</button><button class="btn" type="button" data-act="step">Step 1 epoch</button><button class="btn" type="button" data-act="reset">New random weights</button></div>
+      <label class="field"><span>Data</span><select id="lab-ds">${Object.entries(DATASETS).map(([k, d]) => `<option value="${k}">${d.name}</option>`).join("")}</select></label>
+      <label class="field"><span>Activation</span><select id="lab-act"><option value="tanh">tanh</option><option value="relu">ReLU</option><option value="sigmoid">sigmoid</option></select></label>
+      <label class="field"><span>Learning rate</span><select id="lab-lr">${[0.003, 0.01, 0.03, 0.1, 0.3, 1, 3].map((v) => `<option value="${v}">${v}</option>`).join("")}</select></label>
+      <label class="field"><span>Noise <b data-noise></b></span><input id="lab-noise" type="range" min="0" max="0.5" step="0.05"></label>
+    </div>
+    <div class="lab-grid">
+      <section class="panel">
+        <h3>Network</h3>
+        <div class="arch" data-arch></div>
+        <canvas class="wide" data-netcanvas aria-label="Network diagram"></canvas>
+        <div class="neuron-info" data-ninfo>Tap a neuron to see its weights.</div>
+        <div class="legend"><span><span class="swatch" style="background:var(--pos)"></span>positive weight</span><span><span class="swatch" style="background:var(--neg)"></span>negative weight</span><span>thicker = stronger</span></div>
+      </section>
+      <section class="panel">
+        <h3>Output</h3>
+        <canvas class="plot" data-plot aria-label="Decision boundary" style="cursor:crosshair"></canvas>
+        <div class="legend"><span><span class="swatch" style="background:var(--pos)"></span>class 1</span><span><span class="swatch" style="background:var(--neg)"></span>class 0</span><span><span class="ring"></span>test point (never trained on)</span></div>
+        <div class="stats">
+          <div class="stat"><span>Epoch</span><b data-s="epoch"></b></div>
+          <div class="stat"><span>Train loss</span><b data-s="trl"></b></div>
+          <div class="stat"><span>Test loss</span><b data-s="tel"></b></div>
+          <div class="stat"><span>Train acc.</span><b data-s="tra"></b></div>
+          <div class="stat"><span>Test acc.</span><b data-s="tea"></b></div>
+          <div class="stat"><span>Parameters</span><b data-s="params"></b></div>
+        </div>
+        <canvas class="wide" data-loss aria-label="Loss over time"></canvas>
+        <div class="legend"><span><span class="swatch" style="background:var(--ink)"></span>train loss</span><span><span class="swatch" style="background:var(--muted)"></span>test loss (dashed)</span></div>
+        <p class="hint-line" data-hint></p>
+      </section>
+    </div>
+    <section class="panel" style="margin-top:16px">
+      <h3>Forward pass for the marked point</h3>
+      <div class="readout" data-inspect>Tap anywhere on the Output board.</div>
+    </section>
+  </div>`;
+
+  const dsSel = $("#lab-ds", root), actSel = $("#lab-act", root), lrSel = $("#lab-lr", root), noise = $("#lab-noise", root);
+  dsSel.value = LAB.dataset; actSel.value = LAB.activation; lrSel.value = String(LAB.lr); noise.value = LAB.noise;
+  const playBtn = $("[data-act=play]", root);
+  const netCanvas = $("[data-netcanvas]", root), plot = $("[data-plot]", root), lossCanvas = $("[data-loss]", root);
+  let boxes = [];
+
+  function renderArch() {
+    const a = $("[data-arch]", root);
+    a.innerHTML = `<span class="stepper">hidden layers <button type="button" data-l="-1" aria-label="Remove layer">−</button><b>${LAB.hidden.length}</b><button type="button" data-l="1" aria-label="Add layer">+</button></span>` +
+      LAB.hidden.map((n, i) => `<span class="stepper">L${i + 1} <button type="button" data-n="${i}" data-d="-1" aria-label="Fewer neurons in layer ${i + 1}">−</button><b>${n}</b><button type="button" data-n="${i}" data-d="1" aria-label="More neurons in layer ${i + 1}">+</button></span>`).join("");
+    $$("[data-l]", a).forEach((b) => b.addEventListener("click", () => {
+      const d = +b.dataset.l;
+      if (d > 0 && LAB.hidden.length < 4) LAB.hidden.push(4);
+      if (d < 0 && LAB.hidden.length > 0) LAB.hidden.pop();
+      rebuild();
+    }));
+    $$("[data-n]", a).forEach((b) => b.addEventListener("click", () => {
+      const i = +b.dataset.n; LAB.hidden[i] = Math.max(1, Math.min(8, LAB.hidden[i] + +b.dataset.d)); rebuild();
+    }));
+  }
+  function rebuild() { labMakeNet(); renderArch(); draw(); }
+
+  function drawNetwork() {
+    const net = LAB.net, sizes = net.sizes, C = colors();
+    const maxN = Math.max(...sizes);
+    const box = 34, gapY = 12;
+    const height = Math.max(150, maxN * (box + gapY) + 24);
+    const { ctx, w } = setupCanvas(netCanvas, height);
+    ctx.clearRect(0, 0, w, height);
+    const cols = sizes.length;
+    const colX = (l) => 22 + (l / (cols - 1)) * (w - 44 - box);
+    const posOf = (l, j) => [colX(l), (height - sizes[l] * (box + gapY) + gapY) / 2 + j * (box + gapY)];
+    // Each neuron's response across the board (small grid).
+    const G = 14;
+    const maps = sizes.map((n) => Array.from({ length: n }, () => new Float32Array(G * G)));
+    for (let gj = 0; gj < G; gj++) for (let gi = 0; gi < G; gi++) {
+      const x = [-DOMAIN + (2 * DOMAIN * (gi + 0.5)) / G, DOMAIN - (2 * DOMAIN * (gj + 0.5)) / G];
+      const { activations } = net.forward(x);
+      activations.forEach((layer, l) => layer.forEach((a, j) => {
+        let v;
+        if (l === 0) v = a / DOMAIN;
+        else if (l === sizes.length - 1 || net.activationName === "sigmoid") v = 2 * a - 1;
+        else if (net.activationName === "relu") v = Math.tanh(a);
+        else v = a;
+        maps[l][j][gj * G + gi] = v;
+      }));
+    }
+    // Wires.
+    let maxW = 0.5;
+    net.weights.forEach((L) => L.forEach((row) => row.forEach((v) => (maxW = Math.max(maxW, Math.abs(v))))));
+    for (let l = 0; l < net.weights.length; l++) {
+      for (let j = 0; j < net.weights[l].length; j++) for (let i = 0; i < net.weights[l][j].length; i++) {
+        const v = net.weights[l][j][i];
+        const [x1, y1] = posOf(l, i), [x2, y2] = posOf(l + 1, j);
+        ctx.strokeStyle = v >= 0 ? C.posHex : C.negHex;
+        ctx.globalAlpha = 0.25 + 0.75 * Math.min(1, Math.abs(v) / maxW);
+        ctx.lineWidth = 0.6 + 4 * Math.min(1, Math.abs(v) / maxW);
+        ctx.beginPath(); ctx.moveTo(x1 + box, y1 + box / 2);
+        ctx.bezierCurveTo(x1 + box + 30, y1 + box / 2, x2 - 30, y2 + box / 2, x2, y2 + box / 2); ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+    // Neuron thumbnails.
+    boxes = [];
+    const off = document.createElement("canvas"); off.width = G; off.height = G;
+    const octx = off.getContext("2d");
+    sizes.forEach((n, l) => {
+      for (let j = 0; j < n; j++) {
+        const img = octx.createImageData(G, G);
+        maps[l][j].forEach((v, k) => { const c = valueColor(v, C, 0.85); img.data.set([c[0], c[1], c[2], 255], k * 4); });
+        octx.putImageData(img, 0, 0);
+        const [x, y] = posOf(l, j);
+        ctx.imageSmoothingEnabled = true; ctx.drawImage(off, x, y, box, box);
+        ctx.strokeStyle = C.ink; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, box - 1, box - 1);
+        boxes.push({ l, j, x, y });
+      }
+    });
+    ctx.fillStyle = C.muted; ctx.font = "11px monospace"; ctx.textAlign = "center";
+    ctx.fillText("x₁", posOf(0, 0)[0] + box / 2, posOf(0, 0)[1] - 4);
+    ctx.fillText("x₂", posOf(0, 1)[0] + box / 2, posOf(0, 1)[1] + box + 12);
+    ctx.fillText("output", posOf(cols - 1, 0)[0] + box / 2, posOf(cols - 1, 0)[1] + box + 12);
+    ctx.textAlign = "start";
+  }
+
+  function draw() {
+    const net = LAB.net;
+    drawBoundary(plot, (x) => net.predict(x), [...LAB.train, ...LAB.test], { marker: LAB.marker });
+    drawNetwork();
+    const h = LAB.history;
+    const trX = LAB.train.map((p) => p.x), trY = LAB.train.map((p) => p.y), teX = LAB.test.map((p) => p.x), teY = LAB.test.map((p) => p.y);
+    $("[data-s=epoch]", root).textContent = LAB.epoch;
+    $("[data-s=trl]", root).textContent = fmt(h.train[h.train.length - 1], 3);
+    $("[data-s=tel]", root).textContent = fmt(h.test[h.test.length - 1], 3);
+    $("[data-s=tra]", root).textContent = fmt(net.accuracy(trX, trY) * 100, 0) + "%";
+    $("[data-s=tea]", root).textContent = fmt(net.accuracy(teX, teY) * 100, 0) + "%";
+    $("[data-s=params]", root).textContent = net.parameterCount();
+    const C = colors();
+    drawLossChart(lossCanvas, [{ data: h.train, color: C.ink }, { data: h.test, color: C.muted, dash: [5, 4] }], { height: 110, xLabel: "epochs →" });
+    $("[data-hint]", root).textContent = DATASETS[LAB.dataset].hint;
+    $("[data-noise]", root).textContent = fmt(LAB.noise, 2);
+    playBtn.textContent = LAB.playing ? "Pause" : "Train";
+    if (LAB.marker) inspect();
+  }
+
+  function inspect() {
+    const net = LAB.net, x = LAB.marker;
+    const { activations, zs } = net.forward(x);
+    const act = net.activationName;
+    let s = `Point (x₁ = ${fmt(x[0])}, x₂ = ${fmt(x[1])})\n`;
+    for (let l = 0; l < net.weights.length; l++) {
+      const last = l === net.weights.length - 1;
+      s += `\n${last ? "Output" : "Hidden layer " + (l + 1)}  (each: z = sum of weight × input + bias, then ${last ? "sigmoid" : act})\n`;
+      const inNames = l === 0 ? ["x₁", "x₂"] : activations[l].map((_, i) => `h${l}.${i + 1}`);
+      net.weights[l].forEach((row, j) => {
+        const terms = row.map((wv, i) => `${fmt(wv)}×${fmt(activations[l][i])}`).join(" + ");
+        s += `  ${last ? "out " : `h${l + 1}.${j + 1}`}: ${terms} + ${signed(net.biases[l][j])} = ${fmt(zs[l][j])} → ${fmt(activations[l + 1][j], 3)}\n`;
+      });
+    }
+    const p = activations[activations.length - 1][0];
+    s += `\nAnswer: ${fmt(p * 100, 1)}% chance of class 1 → predicts ${p >= 0.5 ? "class 1 (teal)" : "class 0 (rust)"}`;
+    $("[data-inspect]", root).textContent = s;
+  }
+
+  function loop() {
+    if (!LAB.playing || token !== viewToken) { LAB.playing = false; return; }
+    const trX = LAB.train.map((p) => p.x), trY = LAB.train.map((p) => p.y);
+    LAB.net.trainEpoch(trX, trY, LAB.lr, 10, LAB.rand);
+    LAB.epoch++;
+    labRecord();
+    draw();
+    if (LAB.epoch >= 5000) { LAB.playing = false; draw(); return; }
+    requestAnimationFrame(loop);
+  }
+
+  playBtn.addEventListener("click", () => { LAB.playing = !LAB.playing; draw(); if (LAB.playing) loop(); });
+  $("[data-act=step]", root).addEventListener("click", () => {
+    LAB.playing = false;
+    LAB.net.trainEpoch(LAB.train.map((p) => p.x), LAB.train.map((p) => p.y), LAB.lr, 10, LAB.rand);
+    LAB.epoch++; labRecord(); draw();
+  });
+  $("[data-act=reset]", root).addEventListener("click", () => { LAB.playing = false; rebuild(); });
+  dsSel.addEventListener("change", () => { LAB.dataset = dsSel.value; LAB.playing = false; labMakeData(); rebuild(); });
+  actSel.addEventListener("change", () => { LAB.activation = actSel.value; LAB.playing = false; rebuild(); });
+  lrSel.addEventListener("change", () => { LAB.lr = +lrSel.value; draw(); });
+  noise.addEventListener("input", () => { LAB.noise = +noise.value; LAB.playing = false; labMakeData(); rebuild(); });
+  plot.addEventListener("click", (e) => {
+    const r = plot.getBoundingClientRect();
+    LAB.marker = [fromPx(e.clientX - r.left, r.width), -fromPx(e.clientY - r.top, r.height)];
+    draw();
+  });
+  netCanvas.addEventListener("click", (e) => {
+    const r = netCanvas.getBoundingClientRect();
+    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    const hit = boxes.find((b) => mx >= b.x - 4 && mx <= b.x + 38 && my >= b.y - 4 && my <= b.y + 38);
+    const info = $("[data-ninfo]", root);
+    if (!hit) return;
+    if (hit.l === 0) { info.textContent = `Input ${hit.j === 0 ? "x₁ (left–right position)" : "x₂ (up–down position)"}. Inputs have no weights. They're just the data.`; return; }
+    const W = LAB.net.weights[hit.l - 1][hit.j], b = LAB.net.biases[hit.l - 1][hit.j];
+    const name = hit.l === LAB.net.sizes.length - 1 ? "Output neuron" : `Layer ${hit.l}, neuron ${hit.j + 1}`;
+    info.textContent = `${name}: weights in [${W.map((v) => fmt(v)).join(", ")}], bias ${fmt(b)}`;
+  });
+  window.addEventListener("resize", () => { if (token === viewToken) draw(); });
+
+  renderArch();
+  draw();
+  if (LAB.playing) loop();
+}
+
+// =====================================================================
+//  Views
+// =====================================================================
+function lessonStatus(i) {
+  const s = progress().lessons[i + 1];
+  if (!s) return `<span class="chip">not started</span>`;
+  return `<span class="chip ${s.best === s.total ? "done" : ""}">quiz ${s.best}/${s.total}</span>`;
+}
+
+function renderHome(root, token) {
+  const p = progress();
+  const done = Object.values(p.lessons).filter((s) => s.best === s.total).length;
+  const list = (part) => LESSONS.map((l, i) => ({ l, i })).filter(({ l }) => l.part === part).map(({ l, i }) =>
+    `<li><a href="#lesson-${i + 1}"><span class="lesson-num">${String(i + 1).padStart(2, "0")}</span><span><span class="lesson-title">${l.title}</span><span class="lesson-sub">${l.sub}</span></span>${lessonStatus(i)}</a></li>`).join("");
+  root.innerHTML = `<div class="wrap">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">15 short lessons · a working lab · a final test</div>
+        <h1>Learn how machines learn by training one yourself</h1>
+        <p class="lede">Start from zero and build up to how ChatGPT and Claude work. Everything here runs on a real neural network written from scratch in plain JavaScript, so every number you see is real.</p>
+        <div class="btn-row" style="margin-top:20px">
+          <a class="btn primary" href="#lesson-${Math.min(15, done + 1)}">${done ? "Continue with lesson " + Math.min(15, done + 1) : "Start lesson 1"}</a>
+          <a class="btn" href="#lab">Open the lab</a>
+          <a class="btn" href="#cheat-sheet">Meetup cheat sheet</a>
+        </div>
+        <p class="progress-line">${done} of 15 lesson quizzes passed${p.finalBest !== null ? ` · best final test score ${p.finalBest}/${FINAL_TEST.length}` : ""}</p>
+      </div>
+      <figure class="hero-figure" style="margin:0">
+        <canvas data-hero aria-label="A small network learning to separate a circle"></canvas>
+        <figcaption class="hero-caption" data-hero-cap></figcaption>
+      </figure>
+    </section>
+    <div class="parts">
+      <section class="part"><div class="eyebrow">Part 1</div><h2>How a neural network learns</h2><ol class="lesson-list">${list(1)}</ol></section>
+      <section class="part"><div class="eyebrow">Part 2</div><h2>From tiny networks to ChatGPT</h2><ol class="lesson-list">${list(2)}</ol></section>
+    </div>
+    <div class="extras">
+      <a class="extra" href="#lab"><h3>The lab</h3><p>Build networks, train them live, and inspect every weight.</p></a>
+      <a class="extra" href="#cheat-sheet"><h3>Meetup cheat sheet</h3><p>30-second answers to the questions people ask, plus a glossary.</p></a>
+      <a class="extra" href="#final-test"><h3>Final test</h3><p>15 mixed questions across both parts.</p></a>
+      <a class="extra" href="#code"><h3>Read the code</h3><p>The network, the language model, and the tokenizer. No libraries.</p></a>
+    </div>
+  </div>`;
+  // Live hero: a 2-4-1 network learning the circle.
+  const canvas = $("[data-hero]", root), cap = $("[data-hero-cap]", root);
+  const pts = DATASETS.circle.make(160, 0.05, makeRandom(3));
+  const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+  const net = new NeuralNetwork([2, 4, 1], { activation: "tanh", seed: 8 });
+  const rand = makeRandom(4);
+  let epoch = 0;
+  const frame = () => {
+    drawBoundary(canvas, (x) => net.predict(x), pts, { res: 40 });
+    cap.textContent = `live · 2-4-1 network · epoch ${epoch} · loss ${fmt(net.averageLoss(xs, ys), 3)} · accuracy ${fmt(net.accuracy(xs, ys) * 100, 0)}%`;
+  };
+  if (reducedMotion) { for (; epoch < 300; epoch++) net.trainEpoch(xs, ys, 0.3, 10, rand); frame(); return; }
+  const tick = () => {
+    if (token !== viewToken) return;
+    net.trainEpoch(xs, ys, 0.3, 10, rand); epoch++;
+    frame();
+    if (epoch < 400) setTimeout(() => requestAnimationFrame(tick), 30);
+  };
+  frame(); tick();
+}
+
+function renderLesson(root, n, token) {
+  const L = LESSONS[n - 1];
+  const prev = LESSONS[n - 2], next = LESSONS[n];
+  root.innerHTML = `<article class="read">
+    <header class="lesson-head">
+      <div class="eyebrow">Part ${L.part} · Lesson ${n} of ${LESSONS.length}</div>
+      <h1>${L.title}</h1>
+      <p class="lede" style="margin-top:8px">${L.sub}</p>
+    </header>
+    <div class="prose">${L.body}</div>
+    <aside class="meetup"><span class="tag">Say it at the meetup</span><p>${L.meetup}</p></aside>
+    <div data-quiz></div>
+    <nav class="lesson-nav" aria-label="Lessons">
+      ${prev ? `<a class="btn" href="#lesson-${n - 1}"><span><small>Previous</small>${prev.title}</span></a>` : `<a class="btn" href="#home"><span><small>Back to</small>Course</span></a>`}
+      ${next ? `<a class="btn primary next" href="#lesson-${n + 1}"><span><small style="color:inherit;opacity:.8">Next</small>${next.title}</span></a>` : `<a class="btn primary next" href="#final-test"><span><small style="color:inherit;opacity:.8">Done?</small>Take the final test</span></a>`}
+    </nav>
+  </article>`;
+  $$("[data-widget]", root).forEach((el) => WIDGETS[el.dataset.widget](el, token));
+  $$("[data-lab-preset]", root).forEach((b) => b.addEventListener("click", () => { pendingPreset = b.dataset.labPreset; location.hash = "lab"; }));
+  renderQuiz($("[data-quiz]", root), L.quiz, {
+    onFinish: (c, t) => {
+      const p = progress();
+      const old = p.lessons[n];
+      p.lessons[n] = { best: Math.max(c, old ? old.best : 0), total: t };
+      saveProgress(p);
+    },
+  });
+}
+
+function renderFinal(root) {
+  root.innerHTML = `<div class="read">
+    <div class="eyebrow">Final test</div>
+    <h1>Can you hold your own?</h1>
+    <p class="lede" style="margin-top:8px">15 questions mixed across both parts. Some ask you to reason, not just remember. Score 12 or more and you can talk about this confidently.</p>
+    <div data-quiz></div>
+  </div>`;
+  renderQuiz($("[data-quiz]", root), FINAL_TEST, {
+    title: "The questions",
+    onFinish: (c) => { const p = progress(); p.finalBest = Math.max(c, p.finalBest || 0); saveProgress(p); },
+  });
+}
+
+function renderCheatSheet(root) {
+  const qa = [
+    ["What's a neural network, in one breath?", "A big math function with lots of adjustable numbers called weights. You show it examples with the right answers, measure how wrong it is with a loss, and use gradient descent to nudge every weight to be a little less wrong. After millions of nudges, the weights hold the patterns. Nobody writes the rules."],
+    ["How does it actually learn?", "Forward pass to get a prediction, a loss to score it, backpropagation to work out how each weight affected the error (the chain rule, run backwards through the layers), then gradient descent to step each weight downhill. Repeat over mini-batches for many epochs."],
+    ["What's an LLM?", "A large language model: a Transformer neural network trained to predict the next token on trillions of tokens of text. To write, it predicts a token, appends it, and repeats. Chat assistants are that base model plus fine-tuning on example conversations and feedback training like RLHF."],
+    ["What is attention / a Transformer?", "The architecture from Google's 2017 paper 'Attention Is All You Need'. In attention, each token makes a query, compares it with every earlier token's key, and takes a weighted blend of their values. That lets words pull in context from anywhere earlier in the text. Layers alternate attention with feed-forward networks, stacked dozens deep, and it all runs in parallel on GPUs."],
+    ["What are parameters?", "The learned numbers: weights and biases. GPT-3 had 175 billion. Most frontier labs don't publish their counts now. My little lab network had 37."],
+    ["What are tokens and embeddings?", "Tokens are chunks of text, about ¾ of a word each, usually built with Byte Pair Encoding. Each token ID gets swapped for an embedding, a long learned vector where similar meanings sit close together."],
+    ["Why do LLMs hallucinate?", "They're trained to produce likely text, not verified facts, and they have no built-in database. Rare facts get blurry, and the model fills the gap with something plausible. Retrieval (RAG), tools, and training for calibrated answers help, but don't remove it."],
+    ["Does ChatGPT learn from my chats?", "Not while you're chatting. That's inference, and the weights are frozen. Memory features save notes and put them back into the context window. Companies may use conversations in future training runs depending on their policies and your settings, but that's a separate, later process."],
+    ["Why GPUs?", "Neural networks are mostly enormous amounts of multiply-and-add, specifically matrix multiplication. GPUs do thousands of those in parallel. Deep learning took off around 2012, when AlexNet was trained on GPUs and won the ImageNet image-recognition competition by a big margin."],
+    ["Is it really thinking?", "Honestly, that's debated. Mechanically it's next-token prediction. But predicting text well at scale seems to require internal representations of facts and reasoning, and interpretability researchers study those. I'd say it's 'just prediction', but prediction that needs a lot of structure inside."],
+  ];
+  const glossary = [
+    ["Neuron", "Weighted sum of inputs plus a bias, passed through an activation function."],
+    ["Weight", "A learned number on a connection. Says how much, and which way, an input matters."],
+    ["Bias", "A learned number added to a neuron's sum. Its default lean."],
+    ["Activation function", "The bend after the sum (sigmoid, tanh, ReLU). Without it, depth is pointless."],
+    ["Layer", "A group of neurons. Input, hidden, output."],
+    ["Forward pass", "Running an input through the network to get an output."],
+    ["Loss", "One number for how wrong the network is. Training lowers it."],
+    ["Cross-entropy", "Loss = −log(probability given to the correct answer)."],
+    ["Gradient", "The slope of the loss with respect to each weight."],
+    ["Gradient descent", "Repeatedly stepping weights against the gradient, downhill."],
+    ["Learning rate", "Step size for gradient descent."],
+    ["Backpropagation", "Computing all the gradients by passing blame backwards with the chain rule."],
+    ["Epoch", "One full pass over the training data."],
+    ["Mini-batch", "A small group of examples used for one update."],
+    ["Overfitting", "Memorising the training data. Good training scores, bad test scores."],
+    ["Parameters / hyperparameters", "Learned numbers / settings people choose."],
+    ["Inference", "Using a trained model. Weights frozen."],
+    ["Token", "A chunk of text with an ID. About ¾ of an English word."],
+    ["BPE", "Byte Pair Encoding. Builds a token vocabulary by merging frequent pairs."],
+    ["Embedding", "A learned vector for a token. Nearby means similar."],
+    ["Softmax", "Turns a list of scores into probabilities that sum to 1."],
+    ["Attention", "Each token blends information from other tokens, weighted by query–key match."],
+    ["Transformer", "Architecture of stacked attention and feed-forward layers. The T in GPT."],
+    ["Context window", "How many tokens the model can see at once."],
+    ["Temperature", "How random the next-token sampling is."],
+    ["Pretraining", "Next-token training on massive text. Produces a base model."],
+    ["Fine-tuning", "Further training on chosen examples, such as assistant conversations."],
+    ["RLHF", "Reinforcement learning from human feedback. Tunes toward answers people prefer."],
+    ["RAG", "Retrieval-augmented generation. Fetch relevant documents and put them in the context."],
+    ["Hallucination", "Confident output that isn't true."],
+  ];
+  const numbers = [
+    ["1943", "McCulloch & Pitts' math model of a neuron"], ["1958", "Rosenblatt's perceptron"], ["1969", "Minsky & Papert's Perceptrons shows one layer can't do XOR"],
+    ["1986", "Rumelhart, Hinton & Williams popularise backpropagation"], ["2012", "AlexNet, trained on GPUs, wins ImageNet. Deep learning takes off"], ["2013", "word2vec embeddings (king − man + woman ≈ queen)"],
+    ["2017", "'Attention Is All You Need' introduces the Transformer"], ["2020", "GPT-3: 175 billion parameters"], ["Nov 2022", "ChatGPT launches"],
+    ["2024", "Hinton and Hopfield win the Nobel Prize in Physics for neural network foundations"],
+  ];
+  root.innerHTML = `<div class="read">
+    <div class="eyebrow">Meetup cheat sheet</div>
+    <h1>Hold your own in the conversation</h1>
+    <p class="lede" style="margin-top:8px">Short, accurate answers you can say out loud. Read them until you can say them without looking.</p>
+    <aside class="meetup"><span class="tag">When someone asks what you've been working on</span>
+      <p>"I built a small neural network from scratch in JavaScript, no libraries, to really understand how they learn. It does the forward pass, cross-entropy loss, backpropagation and gradient descent, and you can watch it learn shapes live. I also built a tiny character-level language model that learns to write from about 1,600 characters of text, plus a BPE tokenizer. Same core ideas as GPT, just about 40 million times smaller than GPT-3."</p></aside>
+    <h2 style="margin-top:32px">Questions you'll get</h2>
+    <div class="qa">${qa.map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}</div>
+    <h2>Dates worth knowing</h2>
+    <div class="table-scroll" style="margin-top:12px"><table class="data">${numbers.map(([y, t]) => `<tr><td class="num">${y}</td><td>${t}</td></tr>`).join("")}</table></div>
+    <h2 style="margin-top:32px">Glossary</h2>
+    <dl class="glossary">${glossary.map(([t, d]) => `<dt>${t}</dt><dd>${d}</dd>`).join("")}</dl>
+  </div>`;
+}
+
+function renderCode(root) {
+  const files = ["nn.js", "tinylm.js", "tokenizer.js"];
+  root.innerHTML = `<div class="wrap">
+    <div class="eyebrow">Read the code</div>
+    <h1>Everything, from scratch</h1>
+    <p class="lede" style="margin-top:8px">No AI libraries. Start with <b>nn.js</b>. The comments walk you through every step. If you're learning JavaScript on freeCodeCamp, all of this is code you can read.</p>
+    <div class="seg" role="group" aria-label="File" style="margin:16px 0">${files.map((f, i) => `<button type="button" data-file="${f}" aria-pressed="${i === 0}">${f}</button>`).join("")}</div>
+    <pre class="code-view" data-code>Loading…</pre>
+  </div>`;
+  const show = async (f) => {
+    $$("[data-file]", root).forEach((b) => b.setAttribute("aria-pressed", b.dataset.file === f));
+    const pre = $("[data-code]", root);
+    try {
+      const res = await fetch(f);
+      if (!res.ok) throw new Error(res.status);
+      const text = await res.text();
+      pre.innerHTML = escapeHtml(text).split("\n").map((line) => {
+        const i = line.indexOf("//");
+        return i >= 0 && !line.slice(0, i).includes('"') ? line.slice(0, i) + `<span class="c">${line.slice(i)}</span>` : line;
+      }).join("\n");
+    } catch (e) {
+      pre.textContent = `Couldn't load ${f} here. If you opened this page as a file on your computer, open ${f} from the same folder in any text editor.`;
+    }
+  };
+  $$("[data-file]", root).forEach((b) => b.addEventListener("click", () => show(b.dataset.file)));
+  show(files[0]);
+}
+
+// =====================================================================
+//  Router
+// =====================================================================
+function route() {
+  const token = ++viewToken;
+  LAB.playing = false;
+  const name = (location.hash || "#home").slice(1) || "home";
+  const root = $("#view");
+  const m = name.match(/^lesson-(\d+)$/);
+  let nav = name;
+  if (m && +m[1] >= 1 && +m[1] <= LESSONS.length) { renderLesson(root, +m[1], token); nav = "home"; }
+  else if (name === "lab") renderLab(root, token);
+  else if (name === "cheat-sheet") renderCheatSheet(root);
+  else if (name === "final-test") renderFinal(root);
+  else if (name === "code") renderCode(root);
+  else { renderHome(root, token); nav = "home"; }
+  $$("[data-nav]").forEach((a) => (a.dataset.nav === nav ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", route);
+route();
+</script>
