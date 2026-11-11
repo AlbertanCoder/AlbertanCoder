@@ -45,6 +45,36 @@ const TRAINING_TEXT = [
   "when the loss goes down the network is learning. when it stops going down it is done.",
 ].join(" ");
 
+// More text for the Transformer in transformer.js. It needs more to read
+// than the tiny model above, because it has more weights to fill.
+const MORE_TEXT = [
+  "a transformer reads all the words at once. each word looks back at the words before it and picks the ones that matter.",
+  "the word it looks back at the trophy. the word big looks back at the trophy too. that is what attention does.",
+  "each word makes a query and a key and a value. the query asks a question. the key says what the word has. the value is what it gives.",
+  "the model adds up the values with the weights from attention. then a small network thinks about each word on its own.",
+  "the blocks are stacked one on top of the other. each block adds a little more to what the word means.",
+  "the loss goes down when the model gets better at guessing the next word. the loss goes up when it gets worse.",
+  "in edmonton the winter is long and the snow is deep. people go to the gym to stay strong when it is cold outside.",
+  "the river runs through the city. in the summer people walk by the river and the trees are green and tall.",
+  "a good coach watches the arm and the wrist and the shoulder. the coach says keep the hand close and pull with the back.",
+  "the match starts when the ref says ready go. the two hands lock and the strong side pulls the other hand down.",
+  "the table has two pads and two pegs. the free hand holds the peg. the elbow stays on the pad the whole time.",
+  "a puller who trains the wrist and the hand can win against a bigger arm. strength in the hand matters a lot.",
+  "the network starts with random weights. at first it writes nonsense. then it learns letters. then it learns words.",
+  "after a while it learns that a space comes after a word and a period comes at the end of a sentence.",
+  "a small model can only learn a little. a big model with many layers can learn a lot more from a lot more text.",
+  "the model reads the text in small windows. each window is a few dozen letters long. it guesses every next letter.",
+  "the gradient says which way to move each weight. adam keeps track of the past gradients and takes smart steps.",
+  "the norm keeps the numbers from growing too big. the residual lets the signal skip past a block when it needs to.",
+  "the model does not know what is true. it only knows what words tend to come next. that is why it can be wrong.",
+  "when the training loss goes down but the test loss goes up the model is memorizing. that is called overfitting.",
+  "the farmer drives the truck down the gravel road. the wheat is gold and the sky is blue and the wind is strong.",
+  "the hockey game is on saturday night. the whole town comes to the rink and the kids sit up front.",
+  "the cook makes eggs and toast in the morning. the coffee is hot and the kitchen is warm when the snow falls.",
+  "we learn by doing the same thing many times. the network learns the same way. one step at a time.",
+].join(" ");
+const TRANSFORMER_TEXT = TRAINING_TEXT + " " + MORE_TEXT;
+
 class TinyLanguageModel {
   constructor(text, options = {}) {
     this.text = text;
@@ -203,5 +233,5 @@ class TinyLanguageModel {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { TinyLanguageModel, TRAINING_TEXT };
+  module.exports = { TinyLanguageModel, TRAINING_TEXT, TRANSFORMER_TEXT };
 }

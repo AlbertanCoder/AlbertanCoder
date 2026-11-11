@@ -9,11 +9,13 @@
 //  How to read this file:
 //    1. makeRandom   : a dice roller we can replay (same seed, same rolls)
 //    2. ACTIVATIONS  : the "squish" functions neurons apply
-//    3. NeuralNetwork: holds the weights and biases
-//         forward()    : push an input through, layer by layer
-//         trainBatch() : measure how wrong it was, assign blame
-//                        backwards (backpropagation), nudge every
-//                        weight downhill (gradient descent)
+//    3. Matrix helpers: tiny versions of what GPUs are built for
+//    4. NeuralNetwork: holds the weights and biases
+//         forward()             : push an input through, layer by layer
+//         gradientsOneAtATime() : backpropagation, one neuron at a time
+//         gradientsMatrix()     : the same math as matrix multiplies
+//         applyGradients()      : gradient descent or Adam
+//         trainBatch()          : one full training step
 // =====================================================================
 
 // ---------------------------------------------------------------------
@@ -69,7 +71,38 @@ const ACTIVATIONS = {
 const sigmoid = ACTIVATIONS.sigmoid.f;
 
 // ---------------------------------------------------------------------
-// 3. The network.
+// 3. Matrix helpers. A matrix here is an array of rows.
+//    matMul(A, B)   : A (n x k) times B (k x m) -> n x m
+//    matMulT(A, B)  : A times B-transposed (B stored as m x k)
+// ---------------------------------------------------------------------
+function matMul(A, B) {
+  const n = A.length, k = B.length, m = B[0].length;
+  const out = [];
+  for (let r = 0; r < n; r++) {
+    const row = new Array(m).fill(0);
+    for (let t = 0; t < k; t++) {
+      const a = A[r][t];
+      if (a === 0) continue;
+      for (let c = 0; c < m; c++) row[c] += a * B[t][c];
+    }
+    out.push(row);
+  }
+  return out;
+}
+function matMulT(A, B) {
+  return A.map((row) => B.map((bRow) => {
+    let s = 0;
+    for (let t = 0; t < row.length; t++) s += row[t] * bRow[t];
+    return s;
+  }));
+}
+const transpose = (A) => A[0].map((_, c) => A.map((row) => row[c]));
+const matAddRow = (A, b) => A.map((row) => row.map((v, c) => v + b[c]));
+const matMap = (A, f) => A.map((row) => row.map(f));
+const columnSums = (A) => A[0].map((_, c) => A.reduce((s, row) => s + row[c], 0));
+
+// ---------------------------------------------------------------------
+// 4. The network.
 //
 //    layerSizes [2, 4, 1] means: 2 inputs, one hidden layer of 4
 //    neurons, 1 output neuron.
@@ -86,6 +119,8 @@ class NeuralNetwork {
     this.sizes = layerSizes.slice();
     this.activationName = options.activation || "tanh";
     this.act = ACTIVATIONS[this.activationName];
+    this.optimizer = options.optimizer || "sgd"; // "sgd" or "adam"
+    this.adam = null;
     const rand = makeRandom(options.seed || 1);
 
     this.weights = [];
@@ -103,7 +138,7 @@ class NeuralNetwork {
         layerW.push(row);
       }
       this.weights.push(layerW);
-      this.biases.push(new Array(fanOut).fill(0.1 * rand.gaussian()));
+      this.biases.push(Array.from({ length: fanOut }, () => 0.1 * rand.gaussian()));
     }
   }
 
@@ -181,7 +216,7 @@ class NeuralNetwork {
   }
 
   // -------------------------------------------------------------------
-  // TRAINING STEP on a small batch of examples.
+  // TRAINING, part 1: work out the gradients for a small batch.
   //
   //  1. Forward pass for each example.
   //  2. BACKPROPAGATION: start at the output with the error, then walk
@@ -189,11 +224,12 @@ class NeuralNetwork {
   //     for every single weight: "if I nudge you up a little, does the
   //     loss go up or down, and by how much?" That number is the
   //     gradient.
-  //  3. GRADIENT DESCENT: move every weight a small step in the
-  //     direction that makes the loss go down.
-  //        weight = weight - learningRate * gradient
+  //
+  // This version goes one example and one neuron at a time, so you can
+  // follow every multiplication. gradientsMatrix() below does exactly
+  // the same math the way professional code does it.
   // -------------------------------------------------------------------
-  trainBatch(xs, ys, learningRate) {
+  gradientsOneAtATime(xs, ys) {
     const L = this.weights.length;
     // Gradient accumulators, same shape as the weights and biases.
     const gradW = this.weights.map((layer) => layer.map((row) => row.map(() => 0)));
@@ -231,18 +267,119 @@ class NeuralNetwork {
         delta = newDelta;
       }
     }
-
-    // Gradient descent: step every parameter downhill.
+    // Average over the batch.
     const n = xs.length;
+    gradW.forEach((layer) => layer.forEach((row) => row.forEach((_, i) => (row[i] /= n))));
+    gradB.forEach((layer) => layer.forEach((_, j) => (layer[j] /= n)));
+    return { gradW, gradB, loss: totalLoss / n };
+  }
+
+  // -------------------------------------------------------------------
+  // The SAME gradients, computed with MATRIX MATH.
+  //
+  // Stack the whole batch into one table X (one row per example). Then
+  // a whole layer, for every example at once, is one matrix multiply:
+  //
+  //     Z = X · Wᵀ + b          (forward)
+  //     A = activation(Z)
+  //
+  // and backpropagation is three more matrix multiplies per layer:
+  //
+  //     dW     = Δᵀ · A_prev              blame for every weight
+  //     db     = column sums of Δ         blame for every bias
+  //     Δ_prev = (Δ · W) ⊙ slope(Z_prev)  pass blame back (⊙ = multiply
+  //                                        matching entries)
+  //
+  // Nothing new is happening. It's the loops above, regrouped. GPUs are
+  // built to do matrix multiplies extremely fast, which is why every
+  // real framework (PyTorch, JAX, TensorFlow) is written this way.
+  // -------------------------------------------------------------------
+  gradientsMatrix(xs, ys) {
+    const L = this.weights.length;
+    const n = xs.length;
+    const A = [xs]; // A[l] is an n x size[l] matrix
+    const Z = [];
     for (let l = 0; l < L; l++) {
-      for (let j = 0; j < this.weights[l].length; j++) {
-        this.biases[l][j] -= (learningRate * gradB[l][j]) / n;
-        for (let i = 0; i < this.weights[l][j].length; i++) {
-          this.weights[l][j][i] -= (learningRate * gradW[l][j][i]) / n;
+      const z = matAddRow(matMulT(A[l], this.weights[l]), this.biases[l]);
+      Z.push(z);
+      A.push(matMap(z, l === L - 1 ? sigmoid : this.act.f));
+    }
+    const P = A[L].map((row) => row[0]);
+    let loss = 0;
+    for (let k = 0; k < n; k++) loss += NeuralNetwork.crossEntropy(P[k], ys[k]);
+
+    let delta = P.map((p, k) => [(p - ys[k]) / n]); // n x 1, already averaged
+    const gradW = new Array(L), gradB = new Array(L);
+    for (let l = L - 1; l >= 0; l--) {
+      gradW[l] = matMul(transpose(delta), A[l]);
+      gradB[l] = columnSums(delta);
+      if (l === 0) break;
+      const back = matMul(delta, this.weights[l]);
+      delta = back.map((row, k) => row.map((v, i) => v * this.act.df(Z[l - 1][k][i], A[l][k][i])));
+    }
+    return { gradW, gradB, loss: loss / n };
+  }
+
+  // -------------------------------------------------------------------
+  // TRAINING, part 2: use the gradients to update every weight.
+  //
+  // Plain gradient descent ("sgd"):
+  //     weight = weight - learningRate * gradient
+  //
+  // ADAM (2014, Kingma and Ba), what almost everyone uses today. For
+  // each weight it keeps two running averages:
+  //     m = the recent average gradient       (momentum: keep rolling
+  //                                            the way you've been going)
+  //     v = the recent average gradient²      (how big and jumpy the
+  //                                            gradients usually are)
+  // Then:
+  //     weight = weight - learningRate * m / (√v + tiny)
+  // Dividing by √v gives every weight its own step size: weights with
+  // big, noisy gradients take careful steps, weights with small, steady
+  // gradients get a boost. In practice it trains faster and is much
+  // less fussy about the learning rate.
+  // -------------------------------------------------------------------
+  applyGradients({ gradW, gradB }, learningRate) {
+    if (this.optimizer === "adam") {
+      if (!this.adam) {
+        const zerosLike = (arr) => JSON.parse(JSON.stringify(arr)).map(function z(x) { return Array.isArray(x) ? x.map(z) : 0; });
+        this.adam = { t: 0, mW: zerosLike(this.weights), vW: zerosLike(this.weights), mB: zerosLike(this.biases), vB: zerosLike(this.biases) };
+      }
+      const s = this.adam, b1 = 0.9, b2 = 0.999, eps = 1e-8;
+      s.t++;
+      const c1 = 1 - Math.pow(b1, s.t), c2 = 1 - Math.pow(b2, s.t); // bias correction for the first few steps
+      const step = (params, grads, m, v) => {
+        for (let i = 0; i < params.length; i++) {
+          m[i] = b1 * m[i] + (1 - b1) * grads[i];
+          v[i] = b2 * v[i] + (1 - b2) * grads[i] * grads[i];
+          params[i] -= (learningRate * (m[i] / c1)) / (Math.sqrt(v[i] / c2) + eps);
         }
+      };
+      for (let l = 0; l < this.weights.length; l++) {
+        for (let j = 0; j < this.weights[l].length; j++) step(this.weights[l][j], gradW[l][j], s.mW[l][j], s.vW[l][j]);
+        step(this.biases[l], gradB[l], s.mB[l], s.vB[l]);
+      }
+      return;
+    }
+    // Plain gradient descent: step every parameter downhill.
+    for (let l = 0; l < this.weights.length; l++) {
+      for (let j = 0; j < this.weights[l].length; j++) {
+        this.biases[l][j] -= learningRate * gradB[l][j];
+        for (let i = 0; i < this.weights[l][j].length; i++) this.weights[l][j][i] -= learningRate * gradW[l][j][i];
       }
     }
-    return totalLoss / n;
+  }
+
+  // One training step on a mini-batch: gradients, then update.
+  trainBatch(xs, ys, learningRate) {
+    const grads = this.gradientsMatrix(xs, ys);
+    this.applyGradients(grads, learningRate);
+    return grads.loss;
+  }
+
+  setOptimizer(name) {
+    this.optimizer = name;
+    this.adam = null; // Adam starts its running averages fresh
   }
 
   // One EPOCH = one full pass over the training data, in shuffled

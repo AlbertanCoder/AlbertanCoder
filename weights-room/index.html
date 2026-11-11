@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>The Weights Room</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,6 +42,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
   background: var(--bg);
   color: var(--ink);
@@ -341,6 +343,7 @@ textarea, input[type="text"] {
 <script src="nn.js"></script>
 <script src="tokenizer.js"></script>
 <script src="tinylm.js"></script>
+<script src="transformer.js"></script>
 <script>
 "use strict";
 
@@ -360,7 +363,16 @@ function store(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e) { return null; }
 }
-function progress() { return store("weights-room-progress") || { lessons: {}, finalBest: null }; }
+const OLD_LESSON_ORDER = ["what-is", "one-neuron", "activation", "layers", "forward-pass", "loss", "gradient-descent", "backprop", "training", "tokens", "embeddings", "next-token", "attention", "chatbot", "limits"];
+function progress() {
+  const p = store("weights-room-progress") || { lessons: {}, finalBest: null, v: 2 };
+  if (p.v !== 2) { // older saves were keyed by lesson number
+    const lessons = {};
+    for (const [k, val] of Object.entries(p.lessons || {})) if (OLD_LESSON_ORDER[+k - 1]) lessons[OLD_LESSON_ORDER[+k - 1]] = val;
+    p.lessons = lessons; p.v = 2;
+  }
+  return p;
+}
 function saveProgress(p) { store("weights-room-progress", p); }
 
 function hexToRgb(hex) {
@@ -490,8 +502,11 @@ function renderQuiz(container, questions, { title = "Check yourself", onFinish }
   questions.forEach((q, qi) => {
     const div = document.createElement("div");
     div.className = "q";
-    div.innerHTML = `<div class="q-prompt">${qi + 1}. ${q.q}</div><div class="q-options">${q.options
-      .map((o, oi) => `<button class="q-opt" data-i="${oi}"><span class="letter">${"ABCD"[oi]}</span><span>${o}</span></button>`)
+    // Show the options in a random order each time, so the right answer isn't always in the same spot.
+    const order = q.options.map((_, i) => i);
+    for (let k = order.length - 1; k > 0; k--) { const r = Math.floor(Math.random() * (k + 1)); [order[k], order[r]] = [order[r], order[k]]; }
+    div.innerHTML = `<div class="q-prompt">${qi + 1}. ${q.q}</div><div class="q-options">${order
+      .map((oi, pos) => `<button class="q-opt" data-i="${oi}"><span class="letter">${"ABCD"[pos]}</span><span>${q.options[oi]}</span></button>`)
       .join("")}</div>`;
     list.appendChild(div);
     $$(".q-opt", div).forEach((btn) =>
@@ -525,9 +540,9 @@ function renderQuiz(container, questions, { title = "Check yourself", onFinish }
 //  Course content
 // =====================================================================
 const LESSONS = [
-  // ------------------------------------------------------------- 1
+  // ---------------------------------------------------------------
   {
-    part: 1, title: "What a neural network is", sub: "A math machine with knobs that tune themselves",
+    id: "what-is", part: 1, title: "What a neural network is", sub: "A math machine with knobs that tune themselves",
     body: `
 <p>A normal program follows rules a person wrote. "If the temperature is below zero, say <em>wear a coat</em>." That works when you can write the rules down.</p>
 <p>Some problems have no rules you could ever write down. What exact rule tells a cat photo from a dog photo? Which rule turns a question into a good answer? There are too many cases.</p>
@@ -539,7 +554,7 @@ const LESSONS = [
 <ol>
   <li><strong>A neuron</strong> multiplies its inputs by weights, adds them up, and bends the result. (Lessons 2 to 5)</li>
   <li><strong>The loss</strong> is one number that says how wrong the network is. (Lesson 6)</li>
-  <li><strong>Training</strong> lowers the loss by nudging every weight downhill. Backpropagation works out which way is downhill for each weight. (Lessons 7 to 9)</li>
+  <li><strong>Training</strong> lowers the loss by nudging every weight downhill. Backpropagation works out which way is downhill for each weight. (Lessons 7 to 10)</li>
 </ol>
 <p>ChatGPT, Claude, and Gemini run on these same three ideas, just with billions of weights. Part 2 shows how.</p>
 <div class="callout">Think of training at the gym. A network starts out untrained, does rep after rep, gets feedback each time, and makes small adjustments. One rep does almost nothing. Ten thousand reps make it strong. That's why this course is called The Weights Room: training a network means training its weights.</div>`,
@@ -550,9 +565,9 @@ const LESSONS = [
       { q: "Are artificial neurons copies of real brain neurons?", options: ["Yes, they copy them exactly", "No. They were loosely inspired by them, but each is just a few multiplications and an addition.", "Yes, but smaller", "No, they were named after a scientist called Neural"], answer: 1, why: "The name comes from a loose inspiration in the 1940s and 50s. An artificial neuron is far simpler than a biological one." },
     ],
   },
-  // ------------------------------------------------------------- 2
+  // ---------------------------------------------------------------
   {
-    part: 1, title: "One neuron", sub: "Multiply, add, squish. Try it by hand.",
+    id: "one-neuron", part: 1, title: "One neuron", sub: "Multiply, add, squish. Try it by hand.",
     body: `
 <p>A neuron takes in some numbers, does three things, and sends out one number.</p>
 <ol>
@@ -579,9 +594,9 @@ z = (2 × 0.5) + (1 × −0.2) + 0.1 = 1.0 − 0.2 + 0.1 = <strong>0.9</strong>.
       { q: "On a 2D board, what shape can a single neuron use to split yes from no?", options: ["A straight line", "A circle", "Any shape it wants", "A spiral"], answer: 0, why: "One neuron's yes/no boundary is always straight. Curves and closed shapes need several neurons working in layers." },
     ],
   },
-  // ------------------------------------------------------------- 3
+  // ---------------------------------------------------------------
   {
-    part: 1, title: "Activation functions", sub: "The bend that makes layers worth having",
+    id: "activation", part: 1, title: "Activation functions", sub: "The bend that makes layers worth having",
     body: `
 <p>After a neuron adds up its inputs, it passes the total through an <strong>activation function</strong>. This looks like a small detail, but without it the whole idea falls apart.</p>
 <p><strong>Here's why.</strong> Without the bend, a neuron only multiplies and adds. Feed one multiply-and-add into another and you still have a multiply-and-add. Ten layers of them collapse into what one layer could do, which is a straight line. The bend lets every layer add a new curve, so the network can build complicated shapes out of simple pieces.</p>
@@ -600,9 +615,9 @@ z = (2 × 0.5) + (1 × −0.2) + 0.1 = 1.0 − 0.2 + 0.1 = <strong>0.9</strong>.
       { q: "Which activation is used on the lab's output neuron to give a probability?", options: ["ReLU", "Sigmoid", "None", "Tanh"], answer: 1, why: "Sigmoid always returns a number between 0 and 1, so it can be read as \"probability of class 1\"." },
     ],
   },
-  // ------------------------------------------------------------- 4
+  // ---------------------------------------------------------------
   {
-    part: 1, title: "Layers", sub: "From straight lines to any shape",
+    id: "layers", part: 1, title: "Layers", sub: "From straight lines to any shape",
     body: `
 <p>One neuron draws one line. So use more neurons, arranged in layers:</p>
 <ul>
@@ -631,9 +646,9 @@ z = (2 × 0.5) + (1 × −0.2) + 0.1 = 1.0 − 0.2 + 0.1 = <strong>0.9</strong>.
       { q: "Why are hidden layers called \"hidden\"?", options: ["Their values aren't part of the input data or the final answer, so the network decides what they mean", "They're encrypted", "They're turned off during training", "Programmers aren't allowed to look at them"], answer: 0, why: "You can inspect them, as the lab does, but no one tells them what to represent. The network works that out during training." },
     ],
   },
-  // ------------------------------------------------------------- 5
+  // ---------------------------------------------------------------
   {
-    part: 1, title: "The forward pass", sub: "Watch numbers flow left to right",
+    id: "forward-pass", part: 1, title: "The forward pass", sub: "Watch numbers flow left to right",
     body: `
 <p>Running an input through a network is called the <strong>forward pass</strong>. Each layer takes the numbers from the layer before it, runs every neuron's multiply-add-squish, and hands its outputs on. Whatever comes out the far end is the answer.</p>
 <p>Below is a tiny network: 2 inputs, 2 hidden neurons using tanh, and 1 output neuron using sigmoid. Its weights are fixed so you can follow the arithmetic. Move the inputs and every number updates.</p>
@@ -649,9 +664,9 @@ z = (2 × 0.5) + (1 × −0.2) + 0.1 = 1.0 − 0.2 + 0.1 = <strong>0.9</strong>.
       { q: "Why does AI run on GPUs?", options: ["GPUs are cheaper than CPUs", "A network is mostly enormous numbers of multiply-adds, and GPUs do thousands of them in parallel", "GPUs have more storage", "GPUs were made for AI"], answer: 1, why: "GPUs were built for graphics, which is also massively parallel arithmetic. That turned out to fit neural networks perfectly." },
     ],
   },
-  // ------------------------------------------------------------- 6
+  // ---------------------------------------------------------------
   {
-    part: 1, title: "Loss", sub: "One number that says how wrong you are",
+    id: "loss", part: 1, title: "Loss", sub: "One number that says how wrong you are",
     body: `
 <p>To improve, the network needs a score for how badly it's doing. That score is the <strong>loss</strong>. Lower is better, and training means pushing the loss down.</p>
 <p>For yes/no answers we use <strong>cross-entropy loss</strong>. Look at the probability the network gave to the <em>correct</em> answer, and take minus its logarithm:</p>
@@ -674,9 +689,9 @@ z = (2 × 0.5) + (1 × −0.2) + 0.1 = 1.0 − 0.2 + 0.1 = <strong>0.9</strong>.
       { q: "Why does cross-entropy punish \"confident and wrong\" so harshly?", options: ["To push the model to keep its confidence honest", "It's a rounding error", "To make training slower", "It doesn't"], answer: 0, why: "Putting 1% on the right answer costs 4.6, while a 50/50 guess costs only 0.69. Overconfidence gets expensive." },
     ],
   },
-  // ------------------------------------------------------------- 7
+  // ---------------------------------------------------------------
   {
-    part: 1, title: "Gradient descent", sub: "Walking downhill in the fog",
+    id: "gradient-descent", part: 1, title: "Gradient descent", sub: "Walking downhill in the fog",
     body: `
 <p>Picture every possible setting of the weights as a spot on a huge landscape. The height at each spot is the loss. Training means finding a low valley.</p>
 <p>The catch is that you can't see the landscape. A real network has millions of weights, so this "landscape" has millions of directions. What you <em>can</em> work out is the slope right where you're standing. That slope is called the <strong>gradient</strong>. It tells you which way is uphill and how steep it is.</p>
@@ -696,9 +711,9 @@ z = (2 × 0.5) + (1 × −0.2) + 0.1 = 1.0 − 0.2 + 0.1 = <strong>0.9</strong>.
       { q: "Why is there a minus sign in: new weight = old − learning rate × slope?", options: ["To go opposite the slope, which is downhill", "Weights must stay negative", "It's a typo", "To make the learning rate smaller"], answer: 0, why: "The slope points uphill. Subtracting it moves you downhill, toward lower loss." },
     ],
   },
-  // ------------------------------------------------------------- 8
+  // ---------------------------------------------------------------
   {
-    part: 1, title: "Backpropagation", sub: "Handing out blame, last layer to first",
+    id: "backprop", part: 1, title: "Backpropagation", sub: "Handing out blame, last layer to first",
     body: `
 <p>Gradient descent needs the slope for <em>every</em> weight. A big model has billions of them. Nudging each one separately to see what happens would take forever. <strong>Backpropagation</strong> gets all the slopes in one backward sweep.</p>
 <h3>The idea: hand out blame</h3>
@@ -724,9 +739,9 @@ weight -= learningRate * gradient;            // then step downhill</pre>
       { q: "On one example, a weight's input wire carried exactly 0. How much does that weight get adjusted for that example?", options: ["A lot", "None. Weight blame = neuron blame × input, and the input was 0.", "It gets reset to 0", "It doubles"], answer: 1, why: "If nothing flowed through the wire, the weight couldn't have caused the error, so its gradient is 0 for that example." },
     ],
   },
-  // ------------------------------------------------------------- 9
+  // ---------------------------------------------------------------
   {
-    part: 1, title: "Training for real", sub: "Epochs, test data, and the overfitting trap",
+    id: "training", part: 1, title: "Training for real", sub: "Epochs, test data, and the overfitting trap",
     body: `
 <p>Now put it all together. Training loops over these steps:</p>
 <ol>
@@ -760,9 +775,39 @@ weight -= learningRate * gradient;            // then step downhill</pre>
       { q: "What is one epoch?", options: ["One weight update", "One full pass through all the training data", "One hour of training", "One layer"], answer: 1, why: "An epoch means the network has seen every training example once." },
     ],
   },
-  // ------------------------------------------------------------- 10
+  // ---------------------------------------------------------------
   {
-    part: 2, title: "Tokens", sub: "How text becomes numbers",
+    id: "adam", part: 1, title: "How the pros train", sub: "Matrix math and the Adam optimizer",
+    body: `
+<p>Everything so far has been the real method, done the easy-to-follow way: one example and one neuron at a time, with plain gradient descent. Professional training does the same math with two upgrades. Both are now in <a href="#code">nn.js</a>, and the lab uses them.</p>
+<h3>Upgrade 1: matrix math</h3>
+<p>Stack a whole batch of examples into one table, X, with one row per example. Then one layer, for every example at once, is a single <strong>matrix multiplication</strong>:</p>
+<div class="formula">Z = X · Wᵀ + b &nbsp;&nbsp;→&nbsp;&nbsp; A = activation(Z)</div>
+<p>Backpropagation becomes three more matrix multiplications per layer. Nothing new is being calculated. It's the same multiplications and additions, grouped differently. That grouping matters because GPUs are built to do matrix multiplications extremely fast. PyTorch, JAX, and every other real framework is written this way.</p>
+<p>nn.js has both versions. Press the button to check that they give the same answers:</p>
+<div data-widget="matrix"></div>
+<h3>Upgrade 2: Adam</h3>
+<p>Plain gradient descent uses one step size for every weight. That's clumsy. Some weights have big, jumpy gradients and need careful steps. Others have tiny, steady gradients and barely move.</p>
+<p><strong>Adam</strong>, published in 2014 by Diederik Kingma and Jimmy Ba, keeps two running averages for <em>each</em> weight:</p>
+<ul>
+  <li><strong>m</strong>, the recent average gradient. This is <em>momentum</em>: like a ball rolling downhill, it keeps going the way it's been going and doesn't get knocked around by every bump.</li>
+  <li><strong>v</strong>, the recent average of the gradient squared. This measures how big and jumpy that weight's gradients usually are.</li>
+</ul>
+<div class="formula">weight = weight − learning rate × m / (√v + tiny number)</div>
+<p>Dividing by √v gives every weight its own step size. Weights with big, noisy gradients take careful steps, and weights with small, steady ones get a boost. Most published LLMs were trained with <strong>AdamW</strong>, which is Adam plus a gentle pull of every weight toward zero (weight decay).</p>
+<p>Race them below: the same network, the same starting weights, and the same learning rate.</p>
+<div data-widget="adamrace"></div>
+<p>Adam isn't magic. On an easy problem, plain gradient descent with a well-tuned learning rate can catch up. Adam's real advantages are on big networks, and that it's much less fussy about the learning rate. The <a href="#lab">lab</a> now has an Optimizer setting so you can compare them yourself.</p>`,
+    meetup: "Real training does the same math as matrix multiplications, which is what GPUs are built for. It also usually uses Adam rather than plain gradient descent. Adam keeps a running average of each weight's gradient (momentum) and of its size, so every weight gets its own step size. Most LLMs are trained with AdamW, which is Adam plus weight decay.",
+    quiz: [
+      { q: "Compared with the one-neuron-at-a-time code, what does the matrix version of backprop calculate?", options: ["A rougher approximation, but faster", "Exactly the same numbers, grouped as matrix multiplications", "Only the output layer's gradients", "Something completely different"], answer: 1, why: "It's the same multiplications and additions, regrouped. The test in nn.js shows the two agree to about 17 decimal places." },
+      { q: "What does Adam's \"m\" (momentum) do?", options: ["Keeps a running average of recent gradients, so steps keep heading the way they've been going", "Counts the training steps", "Measures the loss", "Makes every step the same size"], answer: 0, why: "Momentum smooths out the noise from individual mini-batches, like a heavy ball rolling downhill." },
+      { q: "Why does Adam divide by √v?", options: ["To make the loss smaller", "To give each weight its own step size: careful for jumpy gradients, bolder for small steady ones", "To keep the weights positive", "It's a rounding trick"], answer: 1, why: "v tracks how big each weight's gradients usually are, so dividing by √v evens out the step sizes across weights." },
+    ],
+  },
+  // ---------------------------------------------------------------
+  {
+    id: "tokens", part: 2, title: "Tokens", sub: "How text becomes numbers",
     body: `
 <p>A <strong>large language model</strong> (LLM) is a neural network trained on enormous amounts of text. Neural networks only work with numbers, though, so step one is turning text into numbers.</p>
 <p>LLMs don't read letter by letter, or even word by word. They read <strong>tokens</strong>: chunks of text, each with an ID number. Common words are usually one token. Rare or long words get split into pieces. In English, one token works out to about ¾ of a word, or roughly 4 characters, on average.</p>
@@ -789,9 +834,9 @@ weight -= learningRate * gradient;            // then step downhill</pre>
       { q: "Why can counting the letters in a word trip up an LLM?", options: ["LLMs can't do any math", "It sees token IDs for chunks of the word, not the individual letters", "Letters are banned from training data", "Its context window is too small"], answer: 1, why: "\"strawberry\" might arrive as two or three chunks. The letters inside a chunk aren't directly visible to the model." },
     ],
   },
-  // ------------------------------------------------------------- 11
+  // ---------------------------------------------------------------
   {
-    part: 2, title: "Embeddings", sub: "Meaning as a position in space",
+    id: "embeddings", part: 2, title: "Embeddings", sub: "Meaning as a position in space",
     body: `
 <p>A token ID like 4,821 is just a label. The number itself means nothing, and token 4,822 isn't "close" to it in meaning. So the first layer of an LLM swaps every token ID for a long list of learned numbers called an <strong>embedding</strong>.</p>
 <p>Think of an embedding as coordinates. A point on a map has 2 coordinates. A token's embedding might have thousands. GPT-3's had 12,288.</p>
@@ -806,9 +851,9 @@ weight -= learningRate * gradient;            // then step downhill</pre>
       { q: "Why would \"Edmonton\" and \"Calgary\" end up with similar embeddings?", options: ["Their spellings are similar", "Someone grouped Alberta cities together", "They show up in similar contexts, so the model benefits from treating them alike", "Alphabetical order"], answer: 2, why: "Words used the same way lead to similar predictions, so training pulls their embeddings together." },
     ],
   },
-  // ------------------------------------------------------------- 12
+  // ---------------------------------------------------------------
   {
-    part: 2, title: "Predicting the next token", sub: "The one job every LLM is trained for",
+    id: "next-token", part: 2, title: "Predicting the next token", sub: "The one job every LLM is trained for",
     body: `
 <p>Here's the surprising core of it. A language model is trained to do exactly one thing: <strong>given some text, predict the next token</strong>.</p>
 <p>Its output layer has one neuron per token in the vocabulary. A function called <strong>softmax</strong> turns those outputs into probabilities that add up to 100%. "The weather in Edmonton in January is" might give <em>cold</em> 41%, <em>freezing</em> 18%, <em>brutal</em> 6%, and so on through every token it knows.</p>
@@ -826,9 +871,9 @@ weight -= learningRate * gradient;            // then step downhill</pre>
       { q: "With 26 possible characters, what's the loss of a model that guesses uniformly at random?", options: ["0", "About 0.69", "About 3.26, which is −log(1/26)", "26"], answer: 2, why: "Each character gets 1/26 probability, and −log(1/26) ≈ 3.26. A trained model should get well below that." },
     ],
   },
-  // ------------------------------------------------------------- 13
+  // ---------------------------------------------------------------
   {
-    part: 2, title: "Attention and Transformers", sub: "Letting every word look at every other word",
+    id: "attention", part: 2, title: "Attention and Transformers", sub: "Letting every word look at every other word",
     body: `
 <p>The tiny model can only see 4 characters back. Real language needs much more. In "The trophy didn't fit in the suitcase because <strong>it</strong> was too big", working out what <em>it</em> means requires looking way back.</p>
 <p>In 2017, researchers at Google published <em>Attention Is All You Need</em>, introducing the <strong>Transformer</strong>. Almost every major LLM is built on it. The T in GPT stands for Transformer: Generative Pre-trained Transformer.</p>
@@ -848,7 +893,8 @@ weight -= learningRate * gradient;            // then step downhill</pre>
   <li>Stack dozens of those layers. GPT-3 had 96 layers with 96 heads each.</li>
   <li>In GPT-style models, each token can only attend to tokens <em>before</em> it, never after. That way it can't cheat by peeking at the word it's meant to predict.</li>
 </ul>
-<p>Attention also works on all tokens at once instead of reading them one by one, which suits GPUs well. That's a big reason Transformers could scale so far.</p>`,
+<p>Attention also works on all tokens at once instead of reading them one by one, which suits GPUs well. That's a big reason Transformers could scale so far.</p>
+<div class="callout">The attention numbers above were hand-picked to show the idea. In the next lesson you train a real Transformer and look at the attention it actually learns.</div>`,
     meetup: "Transformers, from Google's 2017 paper 'Attention Is All You Need', are the architecture behind nearly all LLMs. The key part is attention: each token makes a query, compares it against every earlier token's key, and takes a weighted blend of their values. That's how 'it' can figure out it means 'the trophy'. Layers alternate attention with feed-forward networks, stacked dozens deep.",
     quiz: [
       { q: "What does the T in GPT stand for?", options: ["Text", "Transformer", "Token", "Training"], answer: 1, why: "Generative Pre-trained Transformer. The Transformer was introduced by Google researchers in 2017." },
@@ -856,9 +902,79 @@ weight -= learningRate * gradient;            // then step downhill</pre>
       { q: "In a GPT-style model, which tokens can a token attend to?", options: ["Only the next token", "Every token, including future ones", "Itself and earlier tokens only", "Only the first token"], answer: 2, why: "Masking stops it from looking ahead. Otherwise predicting the next token would be cheating." },
     ],
   },
-  // ------------------------------------------------------------- 14
+  // ---------------------------------------------------------------
   {
-    part: 2, title: "How a chatbot gets made", sub: "Pretraining, fine-tuning, and feedback",
+    id: "transformer", part: 2, title: "Build a real Transformer", sub: "Every piece, trained live in your browser",
+    body: `
+<p>The attention numbers in the last lesson were hand-picked. This lesson is the real thing: a GPT-style Transformer written from scratch in <a href="#code">transformer.js</a>, with every gradient worked out by hand. It has the same structure as GPT-2 (2019), at about 1/2,000 the size of the smallest GPT-2.</p>
+<h3>The whole model, bottom to top</h3>
+<ol>
+  <li><strong>Embeddings.</strong> Each letter's ID becomes a learned vector of 48 numbers. A learned <em>position</em> vector is added too, because attention by itself has no idea what order the tokens are in. Without it, "dog bites man" and "man bites dog" would look the same.</li>
+  <li><strong>Two Transformer blocks</strong>, one after the other. Each block does:
+    <ul>
+      <li><strong>Normalize, then attention, then add.</strong> Layer normalization rescales each token's numbers into a steady range. Then <strong>multi-head self-attention</strong> runs: 4 heads, each working on its own 12 of the 48 numbers, each token looking only at itself and earlier tokens. The result is <em>added</em> back to what was there.</li>
+      <li><strong>Normalize, then MLP, then add.</strong> A small two-layer neural network, like the ones in the lab, using the GELU activation, thinks about each token separately. Its result is added back too.</li>
+    </ul>
+  </li>
+  <li><strong>Output.</strong> One last normalization, then a layer that gives a score to every letter in the vocabulary, then softmax turns the scores into probabilities for the next letter.</li>
+</ol>
+<p>That "add back" step is a <strong>residual connection</strong>, and it matters more than it looks. Each block adds its notes on top of the running total instead of rewriting it. That gives information, and gradients during backprop, a highway straight through the stack. Residual connections came from image networks (ResNet, 2015), and they're what let models be dozens of layers deep.</p>
+<div data-widget="transformer" data-style="gpt2"></div>
+<h3>What to watch</h3>
+<ul>
+  <li><strong>The loss.</strong> It starts near 3.30, which is −log(1/27), random guessing among 27 characters. Then it falls.</li>
+  <li><strong>The gap between training text and test text.</strong> This model only has about 4,300 letters to learn from. After a few hundred steps it starts memorising: training loss keeps falling while test loss turns back up. That's overfitting, from lesson 9, and it's exactly why real LLMs need trillions of tokens.</li>
+  <li><strong>Attention.</strong> After training, pick a layer and a head. Each row shows where one letter looked. Heads often specialise, for example one head mostly watching the letter just before. Every training run turns out a bit different.</li>
+  <li><strong>Letters versus BPE tokens.</strong> Switch to BPE and watch the test loss shoot up. Cut into word pieces, this little text is only about 1,900 tokens, so the model memorises almost instantly. Real models use BPE because they have vastly more text.</li>
+</ul>
+<h3>How do we know the math is right?</h3>
+<p>Writing backprop by hand for attention and normalization is easy to get subtly wrong. A broken model can even still seem to learn a bit. So the code is checked with a <strong>gradient check</strong>. For hundreds of individual weights, it compares the gradient from backprop with a numerical estimate: nudge the weight up a tiny bit, then down, and measure how the loss changes. That needs no calculus at all. If the two agree to many decimal places, the backprop is correct. The button in the panel above runs it live.</p>
+<p>One fun result fell out of these checks: the <em>key's bias</em> always gets a gradient of exactly zero. Adding the same number to every key shifts all of a query's scores equally, and softmax ignores equal shifts, so that bias can never learn anything. GPT-2 has it anyway. The next lesson's design drops it.</p>`,
+    meetup: "A Transformer block is: normalize, run multi-head self-attention, add the result back to the input (a residual connection), then normalize, run a small feed-forward network, and add back again. Stack the blocks, put token and position embeddings at the bottom and a softmax over the vocabulary at the top. I wrote one from scratch with hand-written backprop and verified it with gradient checks against numerical derivatives.",
+    quiz: [
+      { q: "What does a residual connection do?", options: ["Deletes the previous layer's output", "Adds each block's output to its input, so information and gradients can flow straight through a deep stack", "Stores old training data", "Removes unused tokens"], answer: 1, why: "x = x + block(x). Each block adds on top, and backprop gets a direct path back through every layer." },
+      { q: "Why does a GPT-2-style model add position embeddings?", options: ["To make the model bigger", "Attention by itself ignores word order, so position has to be added in", "To store the vocabulary", "They're optional decoration"], answer: 1, why: "Attention compares every token with every other token, but nothing in it says which came first. Position information fixes that." },
+      { q: "What does a gradient check compare?", options: ["Training loss and test loss", "Backprop's gradients with numerical estimates from nudging each weight up and down a tiny bit", "Two different models", "The learning rate before and after"], answer: 1, why: "If backprop agrees with the slow but certainly correct numerical method, the hand-written math is right." },
+    ],
+  },
+  // ---------------------------------------------------------------
+  {
+    id: "modern", part: 2, title: "Modern upgrades", sub: "From GPT-2 (2019) to Llama-style models",
+    body: `
+<p>GPT-2's Transformer is still the basic template. Open models since Meta's <strong>Llama</strong> (2023) kept the same overall shape but swapped in a few better parts. These are refinements, not a new idea. The switch below trains the same model with the modern parts.</p>
+<div class="table-scroll"><table class="data">
+  <tr><th>Part</th><th>GPT-2 style</th><th>Llama style</th></tr>
+  <tr><td>Normalization</td><td>LayerNorm (2016): subtract the mean, divide by the spread, then scale and shift</td><td><strong>RMSNorm</strong> (2019): just divide by the root-mean-square, then scale. Simpler and cheaper, and works about as well.</td></tr>
+  <tr><td>Word position</td><td>A learned position vector added at the bottom</td><td><strong>RoPE</strong>, rotary position embeddings (2021): rotate each query and key by an angle that depends on its position</td></tr>
+  <tr><td>Feed-forward network</td><td>Widen to 4×, GELU, shrink back</td><td><strong>SwiGLU</strong> (2020): two parallel layers, one acting as a gate that scales the other</td></tr>
+  <tr><td>Biases</td><td>Yes</td><td>None at all</td></tr>
+</table></div>
+<h3>RoPE, the clever one</h3>
+<p>Picture each pair of numbers in a query or key as a clock hand. RoPE turns the hand by an amount that grows with the token's position, and different pairs turn at different speeds. When attention compares a query with a key, only the <em>angle between</em> the two hands matters. So attention automatically depends on <em>how far apart</em> two tokens are, not on their exact positions. That tends to work better, and it's a big part of how models handle long texts.</p>
+<h3>SwiGLU, the gate</h3>
+<p>Instead of one layer then an activation, SwiGLU runs two layers side by side. One goes through the SiLU activation and becomes a gate between "block" and "let through", which then multiplies the other layer's output. Each hidden neuron can decide, token by token, how much of its signal to pass on. In Noam Shazeer's 2020 experiments, gated layers like this trained to lower loss than plain ones of the same size.</p>
+<div data-widget="transformer" data-style="llama"></div>
+<p>In my test runs at this tiny size, the Llama-style model learned the training text faster than the GPT-2 style, and also started memorising sooner. A couple of small runs isn't proof. The real evidence for these parts comes from experiments on much bigger models. Train both here and compare them in the table above.</p>
+<h3>What's still different from a real LLM</h3>
+<p>Now you can say exactly where the gap is. The design matches. What doesn't:</p>
+<ul>
+  <li><strong>Size.</strong> About 60,000 weights here. The smallest GPT-2 had 124 million, and today's big models have billions to hundreds of billions.</li>
+  <li><strong>How far back it can see.</strong> 32 tokens here, 1,024 in GPT-2, and hundreds of thousands in today's models.</li>
+  <li><strong>Data and tokenizer.</strong> 4,300 letters versus trillions of tokens, cut up by a BPE tokenizer with 50,000 to 200,000+ tokens.</li>
+  <li><strong>Extra refinements</strong> in some models: grouped-query attention, which shares keys and values between heads to save memory, and mixture-of-experts, where only some of the weights are used for each token. GPT-2 also shares one table between its input embeddings and its output layer. This version keeps them separate for clarity.</li>
+  <li><strong>Engineering.</strong> Caching keys and values so writing is fast (this model recomputes everything for each new letter), learning-rate schedules, low-precision numbers, and training spread across thousands of GPUs.</li>
+  <li><strong>The chatbot stages.</strong> Fine-tuning and feedback training, from the next lesson.</li>
+</ul>`,
+    meetup: "Modern open models like Llama keep GPT-2's Transformer shape but use RMSNorm instead of LayerNorm, rotary position embeddings that rotate queries and keys by position, and SwiGLU feed-forward layers, and they drop biases. Beyond that, the difference from a real LLM is scale and engineering: size, data, context length, tokenizer, training infrastructure, and the fine-tuning stages.",
+    quiz: [
+      { q: "What does RoPE do?", options: ["Removes the position information", "Rotates each query and key by an angle based on its position, so attention depends on how far apart tokens are", "Adds more attention heads", "Compresses the vocabulary"], answer: 1, why: "Only the angle between two rotated vectors affects their dot product, so attention sees relative distance." },
+      { q: "How is RMSNorm different from LayerNorm?", options: ["It skips subtracting the mean and just divides by the root-mean-square", "It adds a bias", "It normalizes the whole batch together", "It only works with RoPE"], answer: 0, why: "RMSNorm drops the mean step and the bias. It's simpler and works about as well." },
+      { q: "With the Llama-style parts in, what's the main remaining difference from a real open LLM?", options: ["A completely different kind of math", "Scale and engineering: size, data, context length, tokenizer, training setup, and the fine-tuning stages", "Real LLMs don't use attention", "Real LLMs don't use backpropagation"], answer: 1, why: "The design matches. The gap is size, data, and the engineering needed to train and run at that size." },
+    ],
+  },
+  // ---------------------------------------------------------------
+  {
+    id: "chatbot", part: 2, title: "How a chatbot gets made", sub: "Pretraining, fine-tuning, and feedback",
     body: `
 <p>A chat assistant like ChatGPT or Claude is built in stages.</p>
 <h3>1. Pretraining</h3>
@@ -872,7 +988,9 @@ weight -= learningRate * gradient;            // then step downhill</pre>
 <div class="table-scroll"><table class="data">
   <tr><th>Network</th><th>Parameters</th></tr>
   <tr><td>Your lab network (2 hidden layers of 4)</td><td class="num">37</td></tr>
-  <tr><td>Your tiny language model</td><td class="num">4,574</td></tr>
+  <tr><td>Your tiny language model (lesson 13)</td><td class="num">4,574</td></tr>
+  <tr><td>Your tiny Transformer (lessons 15 and 16)</td><td class="num">about 60,000</td></tr>
+  <tr><td>GPT-2 (2019, smallest version)</td><td class="num">124 million</td></tr>
   <tr><td>GPT-2 (2019, largest version)</td><td class="num">1.5 billion</td></tr>
   <tr><td>GPT-3 (2020)</td><td class="num">175 billion</td></tr>
   <tr><td>Today's frontier models</td><td>Usually not disclosed. Many are thought to be in the hundreds of billions or more.</td></tr>
@@ -885,9 +1003,9 @@ weight -= learningRate * gradient;            // then step downhill</pre>
       { q: "How many parameters did GPT-3 have?", options: ["175 thousand", "1.5 billion", "175 billion", "175 trillion"], answer: 2, why: "175 billion, per the 2020 paper. GPT-2's largest version had 1.5 billion." },
     ],
   },
-  // ------------------------------------------------------------- 15
+  // ---------------------------------------------------------------
   {
-    part: 2, title: "What LLMs can't do, and why", sub: "Hallucinations, memory, temperature",
+    id: "limits", part: 2, title: "What LLMs can't do, and why", sub: "Hallucinations, memory, temperature",
     body: `
 <p>Knowing how LLMs work also explains where they fail. People at a meetup will respect you for knowing the limits.</p>
 <h3>Hallucination</h3>
@@ -926,6 +1044,11 @@ const FINAL_TEST = [
   { q: "Who popularised backpropagation in 1986, and later shared the 2024 Nobel Prize in Physics?", options: ["Alan Turing", "Geoffrey Hinton, with Rumelhart and Williams", "Elon Musk", "Marvin Minsky"], answer: 1, why: "Rumelhart, Hinton and Williams popularised backprop in 1986. Hinton shared the 2024 Nobel Prize in Physics with John Hopfield." },
   { q: "What's the difference between parameters and hyperparameters?", options: ["Same thing", "Parameters (weights and biases) are learned. Hyperparameters (learning rate, layer sizes) are chosen by people.", "Hyperparameters are just bigger parameters", "Parameters are chosen and hyperparameters are learned"], answer: 1, why: "The network learns its parameters. You set the hyperparameters before training." },
   { q: "Why does temperature 0.2 give more repetitive text than 1.5?", options: ["It uses fewer tokens", "Low temperature sharpens the probabilities so the top choice nearly always wins", "It changes the weights", "It shrinks the vocabulary"], answer: 1, why: "Dividing the scores by a small temperature exaggerates the gaps between them, so the top token dominates." },
+  { q: "What does Adam do that plain gradient descent doesn't?", options: ["Uses no gradients at all", "Keeps running averages of each weight's gradient and squared gradient, so every weight gets its own step size", "Skips backpropagation", "Adds more layers"], answer: 1, why: "Momentum (m) smooths the direction, and dividing by √v sets a step size per weight." },
+  { q: "Why is professional training written as matrix multiplications?", options: ["They give different, more accurate answers", "Same math, grouped into the operation GPUs do extremely fast", "Backprop doesn't work otherwise", "They need no learning rate"], answer: 1, why: "The numbers are identical (nn.js proves it). The grouping is what lets GPUs run it fast." },
+  { q: "In a Transformer block, what does the residual connection do?", options: ["Throws away the attention output", "Adds the block's output back onto its input, giving information and gradients a direct path through a deep stack", "Picks the next token", "Removes the position information"], answer: 1, why: "x = x + block(x). Without it, very deep stacks are hard to train." },
+  { q: "Which of these is a Llama-style change from GPT-2?", options: ["Removing attention", "RMSNorm instead of LayerNorm, and rotary position embeddings (RoPE)", "Going back to a single layer", "Reading pixels instead of tokens"], answer: 1, why: "Llama-style models also use SwiGLU and drop biases. The overall Transformer shape stays the same." },
+  { q: "You wrote backprop by hand and the loss goes down. Is that proof it's correct?", options: ["Yes, a falling loss proves it", "No. Buggy gradients can still lower the loss somewhat. A gradient check against numerical estimates is the real test.", "Yes, if it trains for over an hour", "Only if the test loss goes down too"], answer: 1, why: "Nudging each weight up and down and measuring the loss gives a calculus-free estimate. Backprop has to match it." },
 ];
 
 // =====================================================================
@@ -1417,7 +1540,7 @@ WIDGETS.temperature = (el, token) => {
     trainBtn.hidden = trained;
     status.textContent = trained
       ? `Trained for ${m.steps.toLocaleString()} steps. Below: next-character odds after "the net" at this temperature.`
-      : `This model has only trained for ${m.steps.toLocaleString()} steps, so its output is still rough. Train it in lesson 12 or press the button.`;
+      : `This model has only trained for ${m.steps.toLocaleString()} steps, so its output is still rough. Train it in lesson ${LESSONS.findIndex((l) => l.id === "next-token") + 1} or press the button.`;
     const g = m.nextGuesses("the net", +slider.value, 5);
     $("[data-bars]", el).innerHTML = g.map((o) => `<div class="bar"><span>"${o.char === " " ? "·" : escapeHtml(o.char)}"</span><div class="bar-track"><div class="bar-fill" style="width:${(o.p * 100).toFixed(1)}%"></div></div><span class="p">${fmt(o.p * 100, 1)}%</span></div>`).join("");
   }
@@ -1473,11 +1596,301 @@ WIDGETS.attention = (el) => {
   draw();
 };
 
+
+// ---- Matrix vs one-at-a-time: same gradients -------------------------
+WIDGETS.matrix = (el) => {
+  el.className = "widget";
+  el.innerHTML = `
+    <div class="widget-title">Same math, two ways</div>
+    <p class="widget-note">A 2-8-8-1 network, a batch of 32 spiral points. Work out every gradient both ways and compare.</p>
+    <button class="btn small primary" type="button">Compute and compare</button>
+    <div class="readout" style="margin-top:10px">Press the button.</div>`;
+  $("button", el).addEventListener("click", () => {
+    const pts = DATASETS.spiral.make(32, 0.1, makeRandom(4));
+    const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+    const net = new NeuralNetwork([2, 8, 8, 1], { seed: 6 });
+    const a = net.gradientsOneAtATime(xs, ys), b = net.gradientsMatrix(xs, ys);
+    let maxDiff = 0, count = 0;
+    a.gradW.forEach((L, l) => L.forEach((row, j) => row.forEach((g, i) => { maxDiff = Math.max(maxDiff, Math.abs(g - b.gradW[l][j][i])); count++; })));
+    a.gradB.forEach((L, l) => L.forEach((g, j) => { maxDiff = Math.max(maxDiff, Math.abs(g - b.gradB[l][j])); count++; }));
+    const time = (f) => { const t = performance.now(); for (let k = 0; k < 200; k++) f(); return (performance.now() - t) / 200; };
+    const t1 = time(() => net.gradientsOneAtATime(xs, ys)), t2 = time(() => net.gradientsMatrix(xs, ys));
+    const g = b.gradW[0][0];
+    $(".readout", el).textContent =
+      `${count} gradients compared.\nLargest difference between the two methods: ${maxDiff.toExponential(1)}\n` +
+      `(that's rounding at the 16th decimal place, so they're the same)\n\n` +
+      `Example, first weight:  one-at-a-time ${a.gradW[0][0][0].toFixed(12)}\n                        matrix        ${g[0].toFixed(12)}\n\n` +
+      `Time per batch here: one-at-a-time ${t1.toFixed(3)} ms, matrix ${t2.toFixed(3)} ms.\n` +
+      `In plain JavaScript neither has a GPU to lean on, so the speeds are similar.\nOn a GPU the matrix version wins by a huge margin.`;
+  });
+};
+
+// ---- Adam vs plain gradient descent race ------------------------------
+WIDGETS.adamrace = (el, token) => {
+  el.className = "widget";
+  el.innerHTML = `
+    <div class="widget-title">Race: plain gradient descent vs Adam</div>
+    <p class="widget-note">Spiral data, a 2-8-8-1 network, identical starting weights.</p>
+    <div class="btn-row" style="margin-bottom:10px">
+      <span class="muted" style="font-size:.9rem">Learning rate for both:</span>
+      <div class="seg" role="group" aria-label="Learning rate"><button type="button" data-lr="0.003" aria-pressed="false">0.003</button><button type="button" data-lr="0.01" aria-pressed="true">0.01</button><button type="button" data-lr="0.03" aria-pressed="false">0.03</button></div>
+    </div>
+    <div class="btn-row"><button class="btn small primary" type="button" data-act="go">Start the race</button><button class="btn small" type="button" data-act="reset">Reset</button><span class="mono muted" data-ep style="font-size:.85rem"></span></div>
+    <div class="two-col" style="margin-top:12px">
+      <div><div class="muted" style="font-size:.85rem;margin-bottom:4px">Plain gradient descent <b class="mono" data-l="sgd"></b></div><canvas class="plot" data-c="sgd" aria-label="Gradient descent result"></canvas></div>
+      <div><div class="muted" style="font-size:.85rem;margin-bottom:4px">Adam <b class="mono" data-l="adam"></b></div><canvas class="plot" data-c="adam" aria-label="Adam result"></canvas></div>
+    </div>
+    <canvas class="wide" data-chart style="margin-top:12px" aria-label="Loss curves"></canvas>
+    <div class="legend"><span><span class="swatch" style="background:var(--neg)"></span>plain gradient descent</span><span><span class="swatch" style="background:var(--pos)"></span>Adam</span></div>`;
+  const pts = DATASETS.spiral.make(200, 0.1, makeRandom(7));
+  const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+  let lr = 0.01, nets, rands, hist, epoch, running = false;
+  function reset() {
+    running = false;
+    nets = { sgd: new NeuralNetwork([2, 8, 8, 1], { seed: 3, optimizer: "sgd" }), adam: new NeuralNetwork([2, 8, 8, 1], { seed: 3, optimizer: "adam" }) };
+    rands = { sgd: makeRandom(1), adam: makeRandom(1) };
+    hist = { sgd: [nets.sgd.averageLoss(xs, ys)], adam: [nets.adam.averageLoss(xs, ys)] };
+    epoch = 0;
+    draw();
+  }
+  function draw() {
+    for (const k of ["sgd", "adam"]) {
+      drawBoundary($(`[data-c=${k}]`, el), (x) => nets[k].predict(x), pts, { res: 36 });
+      $(`[data-l=${k}]`, el).textContent = `loss ${fmt(hist[k][hist[k].length - 1], 3)} · ${fmt(nets[k].accuracy(xs, ys) * 100, 0)}%`;
+    }
+    const C = colors();
+    drawLossChart($("[data-chart]", el), [{ data: hist.sgd, color: C.negHex }, { data: hist.adam, color: C.posHex }], { height: 110, maxY: 0.8, xLabel: "epochs →" });
+    $("[data-ep]", el).textContent = `epoch ${epoch} / 600`;
+    $("[data-act=go]", el).textContent = running ? "Pause" : epoch ? "Continue" : "Start the race";
+  }
+  function tick() {
+    if (!running || token !== viewToken) return;
+    for (let k = 0; k < 3 && epoch < 600; k++) {
+      for (const key of ["sgd", "adam"]) { nets[key].trainEpoch(xs, ys, lr, 10, rands[key]); }
+      epoch++;
+    }
+    for (const key of ["sgd", "adam"]) hist[key].push(nets[key].averageLoss(xs, ys));
+    if (epoch >= 600) running = false;
+    draw();
+    if (running) requestAnimationFrame(tick);
+  }
+  $("[data-act=go]", el).addEventListener("click", () => { if (epoch >= 600) return; running = !running; draw(); if (running) tick(); });
+  $("[data-act=reset]", el).addEventListener("click", reset);
+  $$("[data-lr]", el).forEach((b) => b.addEventListener("click", () => {
+    lr = +b.dataset.lr; $$("[data-lr]", el).forEach((x) => x.setAttribute("aria-pressed", x === b)); reset();
+  }));
+  reset();
+};
+
+// ---- The real Transformer --------------------------------------------
+const TF = {};
+const TF_MAX_STEPS = 3000;
+function tfState(style) {
+  if (!TF[style]) { TF[style] = { mode: "chars", style }; tfReset(style); }
+  return TF[style];
+}
+function tfReset(style) {
+  const s = TF[style];
+  s.data = new TextData(TRANSFORMER_TEXT, { mode: s.mode, merges: 120 });
+  s.model = new TinyGPT({ vocabSize: s.data.vocab.length, context: 32, dModel: 48, nHeads: 4, nLayers: 2, style, seed: 1 });
+  s.opt = new Adam(s.model.params(), { lr: 3e-3 });
+  s.rand = makeRandom(11);
+  s.hist = { train: [], val: [] };
+  s.running = false; s.msPerStep = null; s.sample = null;
+  tfEval(s);
+}
+function tfEval(s) {
+  const r = makeRandom(99);
+  let tr = 0, va = 0;
+  for (let k = 0; k < 3; k++) {
+    let b = s.data.batch("train", 6, 32, r); tr += s.model.forward(b.inputs, b.targets);
+    b = s.data.batch("val", 6, 32, r); va += s.model.forward(b.inputs, b.targets);
+  }
+  s.hist.train.push(tr / 3); s.hist.val.push(va / 3);
+}
+function tfStep(s) {
+  const b = s.data.batch("train", 6, 32, s.rand);
+  s.model.forward(b.inputs, b.targets);
+  s.model.backward();
+  s.opt.step();
+  s.model.steps++;
+  if (s.model.steps % 100 === 0) tfEval(s);
+}
+function tfSample(s, n) {
+  const start = s.data.encode("the ");
+  return s.data.decode(s.model.generate(start, n, 0.8, makeRandom(s.model.steps + 5)));
+}
+
+WIDGETS.transformer = (el, token) => {
+  const style = el.dataset.style;
+  const label = style === "gpt2" ? "GPT-2 style" : "Llama style";
+  el.className = "widget";
+  el.innerHTML = `
+    <div class="widget-title">Train a ${label} Transformer</div>
+    <div class="btn-row" style="margin:6px 0 10px">
+      <button class="btn small primary" type="button" data-act="train">Train</button>
+      <button class="btn small" type="button" data-act="reset">Reset to random</button>
+      <div class="seg" role="group" aria-label="Tokens"><button type="button" data-mode="chars">Letters</button><button type="button" data-mode="bpe">BPE tokens</button></div>
+    </div>
+    <div class="readout" data-arch style="white-space:pre-wrap"></div>
+    <div class="stats">
+      <div class="stat"><span>Steps</span><b data-s="steps"></b></div>
+      <div class="stat"><span>Training-text loss</span><b data-s="train"></b></div>
+      <div class="stat"><span>Test-text loss</span><b data-s="val"></b></div>
+    </div>
+    <canvas class="wide" data-chart aria-label="Loss over training"></canvas>
+    <div class="legend"><span><span class="swatch" style="background:var(--ink)"></span>training text</span><span><span class="swatch" style="background:var(--muted)"></span>held-out test text (dashed)</span><span data-speed></span></div>
+    <div class="muted" style="font-size:.85rem;margin:12px 0 4px">What it writes, starting from "the " (temperature 0.8):</div>
+    <div class="sample" data-sample></div>
+    <h3 style="margin:18px 0 6px">Look inside: real attention weights</h3>
+    <p class="widget-note">Each row is one token (the query). The shading shows how much it looked at each earlier token (the columns). Rows add up to 100%. Grey triangle = the future, which it isn't allowed to see.</p>
+    <input type="text" data-prompt aria-label="Text to inspect" value="the hook pulls the hand in.">
+    <div class="btn-row" style="margin:8px 0">
+      <span class="muted" style="font-size:.85rem">Layer</span><div class="seg" role="group" aria-label="Layer" data-layers></div>
+      <span class="muted" style="font-size:.85rem">Head</span><div class="seg" role="group" aria-label="Head" data-heads></div>
+    </div>
+    <div style="overflow-x:auto"><canvas data-att aria-label="Attention heatmap" style="display:block"></canvas></div>
+    <div class="muted mono" data-att-info style="font-size:.8rem;min-height:1.4em;margin-top:6px"></div>
+    ${style === "llama" ? `<h3 style="margin:18px 0 6px">GPT-2 style vs Llama style</h3><div class="table-scroll"><table class="data" data-compare></table></div>` : ""}
+    <h3 style="margin:18px 0 6px">Prove the math</h3>
+    <p class="widget-note">Runs the gradient check on a small model of this exact design: backprop versus nudging each weight up and down.</p>
+    <button class="btn small" type="button" data-act="check">Run the gradient check</button>
+    <div class="readout" data-check style="margin-top:8px;white-space:pre-wrap" hidden></div>`;
+
+  let layer = 0, head = 0, frame = 0;
+  const s = tfState(style);
+
+  function renderArch() {
+    const m = s.model, c = m.cfg;
+    const parts = style === "gpt2"
+      ? "LayerNorm · learned position embeddings · GELU feed-forward · biases"
+      : "RMSNorm · rotary position embeddings (RoPE) · SwiGLU feed-forward · no biases";
+    $("[data-arch]", el).textContent =
+      `${c.nLayers} blocks · ${c.nHeads} attention heads · ${c.dModel} numbers per token · sees ${c.context} ${s.mode === "bpe" ? "tokens" : "letters"} back\n` +
+      `vocabulary: ${c.vocabSize} ${s.mode === "bpe" ? "BPE tokens" : "characters"} · parameters: ${m.parameterCount().toLocaleString()}\n${parts}`;
+    $$("[data-mode]", el).forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === s.mode));
+  }
+  function renderStats() {
+    const h = s.hist, C = colors();
+    $("[data-s=steps]", el).textContent = s.model.steps.toLocaleString();
+    $("[data-s=train]", el).textContent = fmt(h.train[h.train.length - 1], 2);
+    $("[data-s=val]", el).textContent = fmt(h.val[h.val.length - 1], 2);
+    drawLossChart($("[data-chart]", el), [{ data: h.train, color: C.ink }, { data: h.val, color: C.muted, dash: [5, 4] }],
+      { height: 120, maxY: s.mode === "bpe" ? 9 : 3.6, xLabel: "every 100 steps →" });
+    $("[data-speed]", el).textContent = s.msPerStep ? `${Math.round(s.msPerStep)} ms per step on your device` : "";
+    const btn = $("[data-act=train]", el);
+    btn.textContent = s.running ? "Pause" : s.model.steps >= TF_MAX_STEPS ? "Done" : s.model.steps ? "Keep training" : "Train";
+    btn.disabled = s.model.steps >= TF_MAX_STEPS && !s.running;
+    renderCompare();
+  }
+  function renderSample() {
+    if (!s.sample) s.sample = tfSample(s, s.mode === "bpe" ? 25 : 70);
+    $("[data-sample]", el).innerHTML = `<span class="prompt">the </span>${escapeHtml(s.sample.slice(4))}`;
+  }
+  function renderCompare() {
+    const t = $("[data-compare]", el);
+    if (!t) return;
+    const row = (st) => {
+      const x = TF[st];
+      if (!x) return `<td class="num">–</td><td class="num">not started</td><td class="num">–</td><td class="num">–</td>`;
+      const best = Math.min(...x.hist.val);
+      return `<td class="num">${x.model.parameterCount().toLocaleString()}</td><td class="num">${x.model.steps.toLocaleString()}</td><td class="num">${fmt(x.hist.train[x.hist.train.length - 1], 2)}</td><td class="num">${fmt(best, 2)}</td>`;
+    };
+    t.innerHTML = `<tr><th>Design</th><th>Parameters</th><th>Steps</th><th>Training loss now</th><th>Best test loss</th></tr>
+      <tr><td><a href="#lesson-${LESSONS.findIndex((l) => l.id === "transformer") + 1}">GPT-2 style</a></td>${row("gpt2")}</tr>
+      <tr><td>Llama style</td>${row("llama")}</tr>`;
+  }
+  function renderAttention() {
+    const m = s.model, c = m.cfg;
+    $("[data-layers]", el).innerHTML = Array.from({ length: c.nLayers }, (_, i) => `<button type="button" data-layer="${i}" aria-pressed="${i === layer}">${i + 1}</button>`).join("");
+    $("[data-heads]", el).innerHTML = Array.from({ length: c.nHeads }, (_, i) => `<button type="button" data-head="${i}" aria-pressed="${i === head}">${i + 1}</button>`).join("");
+    $$("[data-layer]", el).forEach((b) => b.addEventListener("click", () => { layer = +b.dataset.layer; renderAttention(); }));
+    $$("[data-head]", el).forEach((b) => b.addEventListener("click", () => { head = +b.dataset.head; renderAttention(); }));
+    let ids = s.data.encode($("[data-prompt]", el).value).slice(-c.context);
+    if (ids.length < 2) ids = s.data.encode("the arm");
+    m.forward([ids]);
+    const grid = m.attentionMap(layer, head);
+    const pieces = s.data.pieces(ids).map((p) => p.replace(/ /g, "·"));
+    const T = ids.length, C = colors();
+    const labelW = s.mode === "bpe" ? 64 : 22;
+    const cell = Math.max(12, Math.min(22, Math.floor(((el.clientWidth || 600) - 40 - labelW) / T)));
+    const canvas = $("[data-att]", el);
+    const W = labelW + T * cell + 4, H = labelW + T * cell + 4;
+    canvas.style.width = W + "px"; canvas.style.height = H + "px";
+    const { ctx } = setupCanvas(canvas, H);
+    ctx.clearRect(0, 0, W, H);
+    ctx.font = `${Math.min(12, cell - 1)}px monospace`;
+    ctx.textBaseline = "middle";
+    for (let t = 0; t < T; t++) {
+      ctx.fillStyle = C.muted; ctx.textAlign = "right";
+      ctx.fillText(pieces[t], labelW - 4, labelW + t * cell + cell / 2);
+      ctx.save(); ctx.translate(labelW + t * cell + cell / 2, labelW - 4); ctx.rotate(-Math.PI / 2); ctx.textAlign = "left";
+      ctx.fillText(pieces[t], 0, 0); ctx.restore();
+      for (let u = 0; u < T; u++) {
+        const x = labelW + u * cell, y = labelW + t * cell;
+        if (u > t) { ctx.fillStyle = C.sunken; ctx.fillRect(x, y, cell - 1, cell - 1); continue; }
+        const c2 = valueColor(Math.sqrt(grid[t][u]), C, 1);
+        ctx.fillStyle = `rgb(${c2[0]},${c2[1]},${c2[2]})`; ctx.fillRect(x, y, cell - 1, cell - 1);
+      }
+    }
+    canvas.onclick = (e) => {
+      const r = canvas.getBoundingClientRect();
+      const t = Math.floor((e.clientY - r.top - labelW) / cell), u = Math.floor((e.clientX - r.left - labelW) / cell);
+      if (t < 0 || u < 0 || t >= T || u >= T) return;
+      $("[data-att-info]", el).textContent = u > t ? "That's the future. The model can't look there." : `"${pieces[t]}" (position ${t + 1}) puts ${fmt(grid[t][u] * 100, 1)}% of its attention on "${pieces[u]}" (position ${u + 1})`;
+    };
+    // Describe what this head mostly does.
+    let prevShare = 0, selfShare = 0;
+    for (let t = 1; t < T; t++) { prevShare += grid[t][t - 1]; selfShare += grid[t][t]; }
+    $("[data-att-info]", el).textContent = `Layer ${layer + 1}, head ${head + 1}: on average ${fmt((prevShare / (T - 1)) * 100, 0)}% on the token just before, ${fmt((selfShare / (T - 1)) * 100, 0)}% on itself. Tap a square for details.`;
+  }
+  function loop() {
+    if (!s.running || token !== viewToken) { s.running = false; renderStats(); return; }
+    const t0 = performance.now();
+    let n = 0;
+    do { tfStep(s); n++; } while (performance.now() - t0 < 40 && s.model.steps < TF_MAX_STEPS);
+    const per = (performance.now() - t0) / n;
+    s.msPerStep = s.msPerStep ? s.msPerStep * 0.8 + per * 0.2 : per;
+    frame++;
+    if (frame % 25 === 0) { s.sample = null; renderSample(); renderAttention(); }
+    if (s.model.steps >= TF_MAX_STEPS) s.running = false;
+    renderStats();
+    if (s.running) requestAnimationFrame(loop);
+    else { s.sample = null; renderSample(); renderAttention(); }
+  }
+  $("[data-act=train]", el).addEventListener("click", () => {
+    s.running = !s.running;
+    renderStats();
+    if (s.running) loop(); else { s.sample = null; renderSample(); renderAttention(); }
+  });
+  $("[data-act=reset]", el).addEventListener("click", () => { tfReset(style); renderArch(); renderStats(); renderSample(); renderAttention(); });
+  $$("[data-mode]", el).forEach((b) => b.addEventListener("click", () => {
+    if (s.mode === b.dataset.mode) return;
+    s.mode = b.dataset.mode; tfReset(style); renderArch(); renderStats(); renderSample(); renderAttention();
+  }));
+  $("[data-prompt]", el).addEventListener("input", renderAttention);
+  $("[data-act=check]", el).addEventListener("click", () => {
+    const out = $("[data-check]", el);
+    out.hidden = false; out.textContent = "Checking…";
+    setTimeout(() => {
+      const t0 = performance.now();
+      const r = gradientCheck(style);
+      out.textContent =
+        `Checked ${r.checked} individual weights across all ${r.tensors} weight tensors of a ${label} model.\n` +
+        `Worst disagreement between backprop and the numerical estimate: ${r.worst.toExponential(1)} (relative), in ${r.worstName}.\n` +
+        (r.worst < 1e-5 ? `That's agreement to about ${Math.floor(-Math.log10(r.worst))} significant digits. The hand-written backprop is correct.` : "They disagree. Something is wrong.") +
+        `\n(${Math.round(performance.now() - t0)} ms)`;
+    }, 30);
+  });
+  s.running = false; // any loop from a previous visit has stopped
+  renderArch(); renderStats(); renderSample(); renderAttention();
+};
+
 // =====================================================================
 //  The Lab
 // =====================================================================
 const LAB = {
-  dataset: "circle", noise: 0.1, hidden: [4, 4], activation: "tanh", lr: 0.1,
+  dataset: "circle", noise: 0.1, hidden: [4, 4], activation: "tanh", lr: 0.1, optimizer: "sgd",
   playing: false, epoch: 0, history: { train: [], test: [] }, net: null, rand: null, train: [], test: [], marker: null,
 };
 let pendingPreset = null;
@@ -1494,7 +1907,7 @@ function labMakeData() {
   LAB.test = pts.slice(168).map((p) => ({ ...p, test: true }));
 }
 function labMakeNet() {
-  LAB.net = new NeuralNetwork([2, ...LAB.hidden, 1], { activation: LAB.activation, seed: 1 + Math.floor(Math.random() * 1e6) });
+  LAB.net = new NeuralNetwork([2, ...LAB.hidden, 1], { activation: LAB.activation, optimizer: LAB.optimizer, seed: 1 + Math.floor(Math.random() * 1e6) });
   LAB.rand = makeRandom(7);
   LAB.epoch = 0; LAB.history = { train: [], test: [] };
   labRecord();
@@ -1522,6 +1935,7 @@ function renderLab(root, token) {
       <div class="btn-row"><button class="btn primary" type="button" data-act="play">Train</button><button class="btn" type="button" data-act="step">Step 1 epoch</button><button class="btn" type="button" data-act="reset">New random weights</button></div>
       <label class="field"><span>Data</span><select id="lab-ds">${Object.entries(DATASETS).map(([k, d]) => `<option value="${k}">${d.name}</option>`).join("")}</select></label>
       <label class="field"><span>Activation</span><select id="lab-act"><option value="tanh">tanh</option><option value="relu">ReLU</option><option value="sigmoid">sigmoid</option></select></label>
+      <label class="field"><span>Optimizer</span><select id="lab-opt"><option value="sgd">gradient descent</option><option value="adam">Adam</option></select></label>
       <label class="field"><span>Learning rate</span><select id="lab-lr">${[0.003, 0.01, 0.03, 0.1, 0.3, 1, 3].map((v) => `<option value="${v}">${v}</option>`).join("")}</select></label>
       <label class="field"><span>Noise <b data-noise></b></span><input id="lab-noise" type="range" min="0" max="0.5" step="0.05"></label>
     </div>
@@ -1557,7 +1971,8 @@ function renderLab(root, token) {
   </div>`;
 
   const dsSel = $("#lab-ds", root), actSel = $("#lab-act", root), lrSel = $("#lab-lr", root), noise = $("#lab-noise", root);
-  dsSel.value = LAB.dataset; actSel.value = LAB.activation; lrSel.value = String(LAB.lr); noise.value = LAB.noise;
+  const optSel = $("#lab-opt", root);
+  dsSel.value = LAB.dataset; actSel.value = LAB.activation; lrSel.value = String(LAB.lr); noise.value = LAB.noise; optSel.value = LAB.optimizer;
   const playBtn = $("[data-act=play]", root);
   const netCanvas = $("[data-netcanvas]", root), plot = $("[data-plot]", root), lossCanvas = $("[data-loss]", root);
   let boxes = [];
@@ -1700,6 +2115,13 @@ function renderLab(root, token) {
   dsSel.addEventListener("change", () => { LAB.dataset = dsSel.value; LAB.playing = false; labMakeData(); rebuild(); });
   actSel.addEventListener("change", () => { LAB.activation = actSel.value; LAB.playing = false; rebuild(); });
   lrSel.addEventListener("change", () => { LAB.lr = +lrSel.value; draw(); });
+  optSel.addEventListener("change", () => {
+    LAB.optimizer = optSel.value;
+    LAB.net.setOptimizer(LAB.optimizer);
+    LAB.lr = LAB.optimizer === "adam" ? 0.01 : 0.1; // each optimizer's usual starting learning rate
+    lrSel.value = String(LAB.lr);
+    draw();
+  });
   noise.addEventListener("input", () => { LAB.noise = +noise.value; LAB.playing = false; labMakeData(); rebuild(); });
   plot.addEventListener("click", (e) => {
     const r = plot.getBoundingClientRect();
@@ -1728,7 +2150,7 @@ function renderLab(root, token) {
 //  Views
 // =====================================================================
 function lessonStatus(i) {
-  const s = progress().lessons[i + 1];
+  const s = progress().lessons[LESSONS[i].id];
   if (!s) return `<span class="chip">not started</span>`;
   return `<span class="chip ${s.best === s.total ? "done" : ""}">quiz ${s.best}/${s.total}</span>`;
 }
@@ -1741,15 +2163,15 @@ function renderHome(root, token) {
   root.innerHTML = `<div class="wrap">
     <section class="hero">
       <div>
-        <div class="eyebrow">15 short lessons · a working lab · a final test</div>
+        <div class="eyebrow">${LESSONS.length} short lessons · a working lab · a final test</div>
         <h1>Learn how machines learn by training one yourself</h1>
         <p class="lede">Start from zero and build up to how ChatGPT and Claude work. Everything here runs on a real neural network written from scratch in plain JavaScript, so every number you see is real.</p>
         <div class="btn-row" style="margin-top:20px">
-          <a class="btn primary" href="#lesson-${Math.min(15, done + 1)}">${done ? "Continue with lesson " + Math.min(15, done + 1) : "Start lesson 1"}</a>
+          <a class="btn primary" href="#lesson-${Math.min(LESSONS.length, done + 1)}">${done ? "Continue with lesson " + Math.min(LESSONS.length, done + 1) : "Start lesson 1"}</a>
           <a class="btn" href="#lab">Open the lab</a>
           <a class="btn" href="#cheat-sheet">Meetup cheat sheet</a>
         </div>
-        <p class="progress-line">${done} of 15 lesson quizzes passed${p.finalBest !== null ? ` · best final test score ${p.finalBest}/${FINAL_TEST.length}` : ""}</p>
+        <p class="progress-line">${done} of ${LESSONS.length} lesson quizzes passed${p.finalBest !== null ? ` · best final test score ${p.finalBest}/${FINAL_TEST.length}` : ""}</p>
       </div>
       <figure class="hero-figure" style="margin:0">
         <canvas data-hero aria-label="A small network learning to separate a circle"></canvas>
@@ -1763,8 +2185,8 @@ function renderHome(root, token) {
     <div class="extras">
       <a class="extra" href="#lab"><h3>The lab</h3><p>Build networks, train them live, and inspect every weight.</p></a>
       <a class="extra" href="#cheat-sheet"><h3>Meetup cheat sheet</h3><p>30-second answers to the questions people ask, plus a glossary.</p></a>
-      <a class="extra" href="#final-test"><h3>Final test</h3><p>15 mixed questions across both parts.</p></a>
-      <a class="extra" href="#code"><h3>Read the code</h3><p>The network, the language model, and the tokenizer. No libraries.</p></a>
+      <a class="extra" href="#final-test"><h3>Final test</h3><p>${FINAL_TEST.length} mixed questions across both parts.</p></a>
+      <a class="extra" href="#code"><h3>Read the code</h3><p>The network, the Transformer, the tokenizer, and the tests. No libraries.</p></a>
     </div>
   </div>`;
   // Live hero: a 2-4-1 network learning the circle.
@@ -1810,8 +2232,8 @@ function renderLesson(root, n, token) {
   renderQuiz($("[data-quiz]", root), L.quiz, {
     onFinish: (c, t) => {
       const p = progress();
-      const old = p.lessons[n];
-      p.lessons[n] = { best: Math.max(c, old ? old.best : 0), total: t };
+      const old = p.lessons[L.id];
+      p.lessons[L.id] = { best: Math.max(c, old ? old.best : 0), total: t };
       saveProgress(p);
     },
   });
@@ -1821,7 +2243,7 @@ function renderFinal(root) {
   root.innerHTML = `<div class="read">
     <div class="eyebrow">Final test</div>
     <h1>Can you hold your own?</h1>
-    <p class="lede" style="margin-top:8px">15 questions mixed across both parts. Some ask you to reason, not just remember. Score 12 or more and you can talk about this confidently.</p>
+    <p class="lede" style="margin-top:8px">${FINAL_TEST.length} questions mixed across both parts. Some ask you to reason, not just remember. Score ${Math.ceil(FINAL_TEST.length * 0.8)} or more and you can talk about this confidently.</p>
     <div data-quiz></div>
   </div>`;
   renderQuiz($("[data-quiz]", root), FINAL_TEST, {
@@ -1836,6 +2258,10 @@ function renderCheatSheet(root) {
     ["How does it actually learn?", "Forward pass to get a prediction, a loss to score it, backpropagation to work out how each weight affected the error (the chain rule, run backwards through the layers), then gradient descent to step each weight downhill. Repeat over mini-batches for many epochs."],
     ["What's an LLM?", "A large language model: a Transformer neural network trained to predict the next token on trillions of tokens of text. To write, it predicts a token, appends it, and repeats. Chat assistants are that base model plus fine-tuning on example conversations and feedback training like RLHF."],
     ["What is attention / a Transformer?", "The architecture from Google's 2017 paper 'Attention Is All You Need'. In attention, each token makes a query, compares it with every earlier token's key, and takes a weighted blend of their values. That lets words pull in context from anywhere earlier in the text. Layers alternate attention with feed-forward networks, stacked dozens deep, and it all runs in parallel on GPUs."],
+    ["What's inside a Transformer block?", "Normalize, then multi-head self-attention, then add the result back onto the input. That's a residual connection. Then normalize, a small feed-forward network, and add back again. Stack dozens of those blocks, with token embeddings at the bottom and a softmax over the vocabulary at the top."],
+    ["How is a Llama-style model different from GPT-2?", "Same overall Transformer. Llama-style models swap LayerNorm for RMSNorm, learned position embeddings for rotary position embeddings (RoPE), and the GELU feed-forward layer for SwiGLU, and drop the biases. Many newer models add grouped-query attention, and some use mixture-of-experts."],
+    ["What optimizer do people use?", "Mostly AdamW. Adam gives each weight its own step size using running averages of its gradient and squared gradient, and the W adds weight decay. It usually runs with a learning-rate schedule that warms up and then decays."],
+    ["How do you know hand-written backprop is right?", "Gradient checking. For hundreds of weights, compare the gradient from backprop with a numerical estimate from nudging that weight up and down a tiny bit. Mine agree to about six or seven significant digits. A falling loss alone isn't proof, because buggy gradients can still lower it somewhat."],
     ["What are parameters?", "The learned numbers: weights and biases. GPT-3 had 175 billion. Most frontier labs don't publish their counts now. My little lab network had 37."],
     ["What are tokens and embeddings?", "Tokens are chunks of text, about ¾ of a word each, usually built with Byte Pair Encoding. Each token ID gets swapped for an embedding, a long learned vector where similar meanings sit close together."],
     ["Why do LLMs hallucinate?", "They're trained to produce likely text, not verified facts, and they have no built-in database. Rare facts get blurry, and the model fills the gap with something plausible. Retrieval (RAG), tools, and training for calibrated answers help, but don't remove it."],
@@ -1860,6 +2286,9 @@ function renderCheatSheet(root) {
     ["Mini-batch", "A small group of examples used for one update."],
     ["Overfitting", "Memorising the training data. Good training scores, bad test scores."],
     ["Parameters / hyperparameters", "Learned numbers / settings people choose."],
+    ["Adam / AdamW", "Optimizer that gives each weight its own step size from running averages of its gradients. AdamW adds weight decay."],
+    ["Matrix multiplication", "Doing a whole layer for a whole batch in one operation. Same math, GPU-friendly."],
+    ["Gradient check", "Proving backprop correct by comparing it with numerical estimates from nudging each weight."],
     ["Inference", "Using a trained model. Weights frozen."],
     ["Token", "A chunk of text with an ID. About ¾ of an English word."],
     ["BPE", "Byte Pair Encoding. Builds a token vocabulary by merging frequent pairs."],
@@ -1867,6 +2296,13 @@ function renderCheatSheet(root) {
     ["Softmax", "Turns a list of scores into probabilities that sum to 1."],
     ["Attention", "Each token blends information from other tokens, weighted by query–key match."],
     ["Transformer", "Architecture of stacked attention and feed-forward layers. The T in GPT."],
+    ["Multi-head attention", "Several attention heads side by side, each free to learn a different pattern."],
+    ["Residual connection", "x = x + block(x). Each block adds to the running total, giving gradients a direct path."],
+    ["LayerNorm / RMSNorm", "Rescale each token's numbers into a steady range. RMSNorm is the simpler, modern version."],
+    ["Position embedding", "How a model knows word order. GPT-2 adds learned position vectors."],
+    ["RoPE", "Rotary position embeddings. Rotate queries and keys by position, so attention sees relative distance."],
+    ["Feed-forward network", "The small two-layer network inside each Transformer block, applied to each token."],
+    ["GELU / SwiGLU", "Activations used in Transformer feed-forward layers. SwiGLU adds a learned gate."],
     ["Context window", "How many tokens the model can see at once."],
     ["Temperature", "How random the next-token sampling is."],
     ["Pretraining", "Next-token training on massive text. Produces a base model."],
@@ -1878,7 +2314,9 @@ function renderCheatSheet(root) {
   const numbers = [
     ["1943", "McCulloch & Pitts' math model of a neuron"], ["1958", "Rosenblatt's perceptron"], ["1969", "Minsky & Papert's Perceptrons shows one layer can't do XOR"],
     ["1986", "Rumelhart, Hinton & Williams popularise backpropagation"], ["2012", "AlexNet, trained on GPUs, wins ImageNet. Deep learning takes off"], ["2013", "word2vec embeddings (king − man + woman ≈ queen)"],
-    ["2017", "'Attention Is All You Need' introduces the Transformer"], ["2020", "GPT-3: 175 billion parameters"], ["Nov 2022", "ChatGPT launches"],
+    ["2014", "Adam optimizer (Kingma & Ba)"], ["2015", "ResNet introduces residual connections"], ["2016", "Layer normalization"],
+    ["2017", "'Attention Is All You Need' introduces the Transformer"], ["2019", "GPT-2, and RMSNorm"], ["2020", "GPT-3: 175 billion parameters. SwiGLU"],
+    ["2021", "Rotary position embeddings (RoPE)"], ["Nov 2022", "ChatGPT launches"], ["2023", "Meta's Llama, with RMSNorm, RoPE and SwiGLU, becomes the open-model template"],
     ["2024", "Hinton and Hopfield win the Nobel Prize in Physics for neural network foundations"],
   ];
   root.innerHTML = `<div class="read">
@@ -1886,7 +2324,7 @@ function renderCheatSheet(root) {
     <h1>Hold your own in the conversation</h1>
     <p class="lede" style="margin-top:8px">Short, accurate answers you can say out loud. Read them until you can say them without looking.</p>
     <aside class="meetup"><span class="tag">When someone asks what you've been working on</span>
-      <p>"I built a small neural network from scratch in JavaScript, no libraries, to really understand how they learn. It does the forward pass, cross-entropy loss, backpropagation and gradient descent, and you can watch it learn shapes live. I also built a tiny character-level language model that learns to write from about 1,600 characters of text, plus a BPE tokenizer. Same core ideas as GPT, just about 40 million times smaller than GPT-3."</p></aside>
+      <p>"I built a neural network from scratch in JavaScript, no libraries, to really understand how they learn: forward pass, cross-entropy loss, backpropagation, and both plain gradient descent and Adam. Then I built a GPT-style Transformer from scratch, with multi-head causal attention, residual connections and layer norm, plus a Llama-style version with RMSNorm, rotary position embeddings and SwiGLU. I wrote all the backprop by hand and verified it with gradient checks against numerical derivatives. It's the same design as the real thing, about 2,000 times smaller than the smallest GPT-2, trained on a few thousand letters in the browser."</p></p></aside>
     <h2 style="margin-top:32px">Questions you'll get</h2>
     <div class="qa">${qa.map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}</div>
     <h2>Dates worth knowing</h2>
@@ -1897,11 +2335,11 @@ function renderCheatSheet(root) {
 }
 
 function renderCode(root) {
-  const files = ["nn.js", "tinylm.js", "tokenizer.js"];
+  const files = ["nn.js", "transformer.js", "tinylm.js", "tokenizer.js", "tests/nn.test.js", "tests/transformer.test.js"];
   root.innerHTML = `<div class="wrap">
     <div class="eyebrow">Read the code</div>
     <h1>Everything, from scratch</h1>
-    <p class="lede" style="margin-top:8px">No AI libraries. Start with <b>nn.js</b>. The comments walk you through every step. If you're learning JavaScript on freeCodeCamp, all of this is code you can read.</p>
+    <p class="lede" style="margin-top:8px">No AI libraries. Start with <b>nn.js</b>, then <b>transformer.js</b>. The comments walk you through every step. The two test files prove the backpropagation is correct. If you're learning JavaScript on freeCodeCamp, all of this is code you can read.</p>
     <div class="seg" role="group" aria-label="File" style="margin:16px 0">${files.map((f, i) => `<button type="button" data-file="${f}" aria-pressed="${i === 0}">${f}</button>`).join("")}</div>
     <pre class="code-view" data-code>Loading…</pre>
   </div>`;
