@@ -65,12 +65,25 @@ class Linear {
     this.x = x; this.N = N;
     const out = new Float64Array(N * nOut);
     for (let n = 0; n < N; n++) {
-      const xo = n * nIn;
-      for (let o = 0; o < nOut; o++) {
+      const xo = n * nIn, oo = n * nOut;
+      let o = 0;
+      // Four outputs at a time: each input number is read once and used
+      // four times. Same math, about twice as fast in JavaScript.
+      for (; o + 3 < nOut; o += 4) {
+        const w0 = o * nIn, w1 = w0 + nIn, w2 = w1 + nIn, w3 = w2 + nIn;
+        let s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+        for (let i = 0; i < nIn; i++) {
+          const xv = x[xo + i];
+          s0 += xv * W[w0 + i]; s1 += xv * W[w1 + i]; s2 += xv * W[w2 + i]; s3 += xv * W[w3 + i];
+        }
+        out[oo + o] = s0 + (b ? b[o] : 0); out[oo + o + 1] = s1 + (b ? b[o + 1] : 0);
+        out[oo + o + 2] = s2 + (b ? b[o + 2] : 0); out[oo + o + 3] = s3 + (b ? b[o + 3] : 0);
+      }
+      for (; o < nOut; o++) {
         const wo = o * nIn;
         let s = b ? b[o] : 0;
         for (let i = 0; i < nIn; i++) s += x[xo + i] * W[wo + i];
-        out[n * nOut + o] = s;
+        out[oo + o] = s;
       }
     }
     return out;
@@ -170,12 +183,12 @@ class Norm {
 // naturally depends on how far apart two tokens are.
 // Numbers are rotated in pairs; each pair spins at a different speed.
 // ---------------------------------------------------------------------
-function ropeApply(x, B, T, H, hs, inverse) {
+function ropeApply(x, B, T, H, hs, inverse, pos0 = 0) {
   const C = H * hs;
   for (let b = 0; b < B; b++) for (let t = 0; t < T; t++) for (let h = 0; h < H; h++) {
     const o = (b * T + t) * C + h * hs;
     for (let i = 0; i < hs / 2; i++) {
-      const angle = t * Math.pow(10000, (-2 * i) / hs);
+      const angle = (t + pos0) * Math.pow(10000, (-2 * i) / hs);
       const cos = Math.cos(angle), sin = inverse ? -Math.sin(angle) : Math.sin(angle);
       const a = x[o + 2 * i], c = x[o + 2 * i + 1];
       x[o + 2 * i] = a * cos - c * sin;
@@ -416,9 +429,16 @@ class TinyGPT {
     this.probs = probs;
     if (!targets) return null;
     this.targets = targets;
-    let loss = 0;
-    for (let b = 0; b < B; b++) for (let t = 0; t < T; t++) loss -= Math.log(probs[(b * T + t) * V + targets[b][t]] + 1e-12);
-    return loss / N;
+    // A target of -1 means "don't score this position" (fine-tuning
+    // uses that so the model is only graded on the story, not the prompt).
+    let loss = 0, count = 0;
+    for (let b = 0; b < B; b++) for (let t = 0; t < T; t++) {
+      if (targets[b][t] < 0) continue;
+      loss -= Math.log(probs[(b * T + t) * V + targets[b][t]] + 1e-12);
+      count++;
+    }
+    this.count = Math.max(count, 1);
+    return loss / this.count;
   }
 
   // Backpropagation through the whole model. Fills every param.grad.
@@ -426,9 +446,13 @@ class TinyGPT {
     const { dModel: C, vocabSize: V } = this.cfg, { B, T, inputs, targets } = this, N = B * T;
     for (const p of this.params()) p.grad.fill(0);
     // Softmax + cross-entropy: blame = (probability − 1 for the right token), averaged.
-    const dlogits = new Float64Array(N * V);
-    for (let n = 0; n < N; n++) for (let v = 0; v < V; v++) dlogits[n * V + v] = this.probs[n * V + v] / N;
-    for (let b = 0; b < B; b++) for (let t = 0; t < T; t++) dlogits[(b * T + t) * V + targets[b][t]] -= 1 / N;
+    const dlogits = new Float64Array(N * V), K = this.count;
+    for (let b = 0; b < B; b++) for (let t = 0; t < T; t++) {
+      const n = b * T + t, y = targets[b][t];
+      if (y < 0) continue; // unscored positions get no blame
+      for (let v = 0; v < V; v++) dlogits[n * V + v] = this.probs[n * V + v] / K;
+      dlogits[n * V + y] -= 1 / K;
+    }
     let dx = this.normF.backward(this.head.backward(dlogits));
     for (let l = this.blocks.length - 1; l >= 0; l--) dx = this.blocks[l].backward(dx);
     // Embeddings: each token's row collects the blame from wherever it was used.
@@ -439,6 +463,107 @@ class TinyGPT {
         if (this.posEmb) this.posEmb.grad[t * C + c] += dx[o + c];
       }
     }
+  }
+
+  // -------------------------------------------------------------------
+  // Put every parameter (or every gradient) into one long array. On the
+  // server, that array lives in shared memory, so several CPU cores can
+  // read the same weights and each write their own gradients.
+  // -------------------------------------------------------------------
+  totalSize() { return this.params().reduce((s, p) => s + p.data.length, 0); }
+  packParams(buffer) {
+    const flat = new Float64Array(buffer || this.totalSize());
+    let o = 0;
+    for (const p of this.params()) { flat.set(p.data, o); o += p.data.length; } // copy the current values in
+    o = 0;
+    for (const p of this.params()) { p.data = flat.subarray(o, o + p.data.length); o += p.data.length; }
+    this.flatParams = flat;
+    return flat;
+  }
+  usePackedParams(buffer) { // a worker attaching to weights the main thread already filled in
+    const flat = new Float64Array(buffer);
+    let o = 0;
+    for (const p of this.params()) { p.data = flat.subarray(o, o + p.data.length); o += p.data.length; }
+    this.flatParams = flat;
+    return flat;
+  }
+  packGrads(buffer) {
+    const flat = new Float64Array(buffer || this.totalSize());
+    let o = 0;
+    for (const p of this.params()) { p.grad = flat.subarray(o, o + p.grad.length); o += p.grad.length; }
+    this.flatGrads = flat;
+    return flat;
+  }
+
+  // -------------------------------------------------------------------
+  // FAST WRITING WITH A KV CACHE.
+  // forward() recomputes every token each time. But when writing, the
+  // earlier tokens never change, so their keys and values never change
+  // either. Real chatbots save them (the "KV cache") and only compute
+  // the one new token each step. Same answers, far less work.
+  // -------------------------------------------------------------------
+  newCache() {
+    const { context, dModel } = this.cfg;
+    return { t: 0, ids: [], k: this.blocks.map(() => new Float64Array(context * dModel)), v: this.blocks.map(() => new Float64Array(context * dModel)) };
+  }
+  // Feed one token. Returns next-token probabilities and, for every
+  // layer and head, where this token looked.
+  step(cache, id, temperature = 1) {
+    const { dModel: C, vocabSize: V, context } = this.cfg;
+    if (cache.t >= context) throw new Error("cache full");
+    const t = cache.t;
+    let x = new Float64Array(C);
+    for (let c = 0; c < C; c++) x[c] = this.tokEmb.data[id * C + c] + (this.posEmb ? this.posEmb.data[t * C + c] : 0);
+    const attention = [];
+    this.blocks.forEach((block, l) => {
+      const a = block.attn, H = a.H, hs = a.hs, scale = 1 / Math.sqrt(hs);
+      const h = block.norm1.forward(x, 1);
+      const q = a.q.forward(h, 1), k = a.k.forward(h, 1), v = a.v.forward(h, 1);
+      if (a.rope) { ropeApply(q, 1, 1, H, hs, false, t); ropeApply(k, 1, 1, H, hs, false, t); }
+      cache.k[l].set(k, t * C); cache.v[l].set(v, t * C);
+      const y = new Float64Array(C), heads = [];
+      for (let hh = 0; hh < H; hh++) {
+        const w = new Float64Array(t + 1);
+        let max = -Infinity;
+        for (let s = 0; s <= t; s++) {
+          let dot = 0;
+          for (let i = 0; i < hs; i++) dot += q[hh * hs + i] * cache.k[l][s * C + hh * hs + i];
+          w[s] = dot * scale; if (w[s] > max) max = w[s];
+        }
+        let sum = 0;
+        for (let s = 0; s <= t; s++) { w[s] = Math.exp(w[s] - max); sum += w[s]; }
+        for (let s = 0; s <= t; s++) {
+          w[s] /= sum;
+          for (let i = 0; i < hs; i++) y[hh * hs + i] += w[s] * cache.v[l][s * C + hh * hs + i];
+        }
+        heads.push(w);
+      }
+      attention.push(heads);
+      const o = a.o.forward(y, 1);
+      const x1 = new Float64Array(C);
+      for (let c = 0; c < C; c++) x1[c] = x[c] + o[c];
+      const m = block.mlp.forward(block.norm2.forward(x1, 1), 1);
+      x = new Float64Array(C);
+      for (let c = 0; c < C; c++) x[c] = x1[c] + m[c];
+    });
+    const logits = this.head.forward(this.normF.forward(x, 1), 1);
+    let max = -Infinity;
+    for (let v = 0; v < V; v++) max = Math.max(max, logits[v] / temperature);
+    const probs = new Float64Array(V);
+    let sum = 0;
+    for (let v = 0; v < V; v++) { probs[v] = Math.exp(logits[v] / temperature - max); sum += probs[v]; }
+    for (let v = 0; v < V; v++) probs[v] /= sum;
+    cache.t++; cache.ids.push(id);
+    return { probs, attention };
+  }
+  // Start a cache from a list of ids. If they don't fit, keep the most recent half-window.
+  prefill(ids, temperature = 1) {
+    const { context } = this.cfg;
+    const keep = ids.length > context ? ids.slice(-Math.floor(context / 2)) : ids;
+    const cache = this.newCache();
+    let last = null;
+    for (const id of keep) last = this.step(cache, id, temperature);
+    return { cache, last };
   }
 
   // Probabilities for the token after `ids` (uses the last `context` ids).

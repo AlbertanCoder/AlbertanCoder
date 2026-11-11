@@ -1,0 +1,5 @@
+# No Python packages are needed.
+# The Weights Room is plain JavaScript with zero dependencies.
+# To run the tests or the (upcoming) training server, install Node.js 20+:
+#   winget install OpenJS.NodeJS.LTS
+# See HANDOFF.md.

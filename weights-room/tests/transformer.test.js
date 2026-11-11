@@ -43,6 +43,44 @@ for (const style of ["gpt2", "llama"]) {
   check(`${style}: no peeking at future tokens`, a.every((v, i) => Math.abs(v - b[i]) < 1e-12));
 }
 
+// KV cache: writing one token at a time must give exactly the same
+// probabilities as running the whole sequence through forward().
+for (const style of ["gpt2", "llama"]) {
+  const model = new TinyGPT({ vocabSize: 9, context: 8, dModel: 12, nHeads: 3, nLayers: 2, style, seed: 4 });
+  const ids = [3, 1, 4, 1, 5, 2, 6, 5];
+  model.forward([ids]);
+  const full = Array.from(model.probs);
+  const cache = model.newCache();
+  let worst = 0;
+  ids.forEach((id, t) => {
+    const { probs } = model.step(cache, id);
+    for (let v = 0; v < 9; v++) worst = Math.max(worst, Math.abs(probs[v] - full[t * 9 + v]));
+  });
+  check(`${style}: KV-cache writing matches the full forward pass`, worst < 1e-12, "max difference " + worst.toExponential(1));
+}
+
+// Shared memory: packing parameters and gradients into one array changes nothing.
+{
+  const model = new TinyGPT({ vocabSize: 9, context: 8, dModel: 12, nHeads: 3, nLayers: 1, style: "llama", seed: 4 });
+  const ids = [[3, 1, 4, 1, 5, 2]], tg = [[1, 4, 1, 5, 2, 6]];
+  const before = model.forward(ids, tg);
+  model.packParams(new SharedArrayBuffer(model.totalSize() * 8));
+  model.packGrads(new SharedArrayBuffer(model.totalSize() * 8));
+  const after = model.forward(ids, tg);
+  model.backward();
+  const nonzero = model.flatGrads.some((g) => g !== 0);
+  check("packed shared-memory weights give the same loss and fill the shared gradients", before === after && nonzero);
+}
+
+// Masked targets: positions marked -1 are not scored.
+{
+  const model = new TinyGPT({ vocabSize: 9, context: 6, dModel: 12, nHeads: 3, nLayers: 1, style: "llama", seed: 4 });
+  const full = model.forward([[1, 2, 3, 4]], [[2, 3, 4, 5]]);
+  const lastOnly = model.forward([[1, 2, 3, 4]], [[-1, -1, -1, 5]]);
+  const p = model.probs;
+  check("masked targets: only unmasked positions count", Math.abs(lastOnly + Math.log(p[3 * 9 + 5])) < 1e-9 && full !== lastOnly);
+}
+
 // Training actually works: loss falls well below random guessing.
 const { TRANSFORMER_TEXT } = require("../tinylm.js");
 for (const style of ["gpt2", "llama"]) {
