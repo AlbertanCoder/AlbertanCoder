@@ -43,7 +43,7 @@ parts are being bought in stages.
 <tr>
 <td width="50%" valign="top">
 <a href="https://github.com/AlbertanCoder/sweepwise"><img src="assets/sweepwise.jpg" alt="The Sweepwise home screen"></a><br>
-<b>Sweepwise</b><br>
+<b>Sweepwise</b> (in testing)<br>
 Free, open-source PC care for Windows, Linux and Mac. It clears junk, checks your protection and speeds up your PC.
 Nothing personal changes without your OK.<br>
 <a href="https://albertancoder.github.io/sweepwise/">Website</a> · <a href="https://github.com/AlbertanCoder/sweepwise">Code</a>
