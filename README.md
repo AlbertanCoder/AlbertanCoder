@@ -1,6 +1,6 @@
 # Hi, I'm Shad
 
-I'm an apprentice carpenter in Edmonton, Alberta, who builds software with AI. I'm not a trained developer. I decide
+I work in construction in Edmonton, Alberta, and build software with AI. I'm not a trained developer. I decide
 what gets built and how it should work, AI writes most of the code, and I test it until it holds up. So far that's a
 game for my little brother, a winter driving simulator and a budget tool I use myself. Right now I'm building my
 first drone, and I wrote the build guide first.
