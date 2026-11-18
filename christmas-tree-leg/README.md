@@ -11,6 +11,7 @@ leg next to a tape measure.
 |---|---|
 | `christmas-tree-leg.stl` | **The one to print.** The whole leg. |
 | `fit-test-plug-end.stl` | Only the first 15 mm (the T-rail plus a bit of body). About 7 g. Print this first to check the fit in the tree base. |
+| `dimensions.png` | Dimensioned drawing: 3D view, top view, side view, T-rail detail, table. |
 | `christmas-tree-leg.scad` | OpenSCAD source. Every size is a named number at the top. |
 
 Both STL files were checked: closed (watertight), every edge shared by exactly two triangles, one solid body.
@@ -27,9 +28,9 @@ Both STL files were checked: closed (watertight), every edge shared by exactly t
 | Floor tip | turns down about 5 mm below the straight edge | traced |
 | T-rail length (across the plug) | 48.5 | runs nearly the full plug width |
 | T-rail lip (bar) thickness | 9.8 | about 0.63 × plug thickness in two photos |
-| T-rail lip depth | 2.4 | top-view photo |
+| T-rail lip depth | 2.2 | top-view and edge-view photos |
 | T-rail neck (stem) thickness | 3.3 | end-view photos |
-| T-rail neck length | 3.2 | top-view photo |
+| T-rail neck length (gap behind lip) | 4.4 | read 3.0 to 4.8; kept long so the base wall fits |
 
 **The T is a rail, not a tab.** Seen from the side edge, the plug end has a T-shaped profile that runs across the
 whole 48.5 mm width. The rail slides into a matching T-slot in the tree base.

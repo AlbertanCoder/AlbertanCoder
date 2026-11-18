@@ -22,9 +22,11 @@ tip_thickness   = 7.5;    // body thickness at the floor tip
 // T-rail on the plug end face (cross-section is a T when you look at the side edge)
 rail_width      = 48.5;   // how far the rail runs across the plug (slightly less than plug_width)
 lip_thickness   = 9.8;    // the T's crossbar, measured in the thickness (z) direction
-lip_length      = 2.4;    // the crossbar's depth along x
+lip_length      = 2.2;    // the crossbar's depth along x
 neck_thickness  = 3.3;    // the T's stem, in z
-neck_length     = 3.2;    // the stem's length along x (gap between lip and body)
+neck_length     = 4.4;    // the stem's length along x (gap between lip and body).
+                          // Read 3.0-4.8 across photos; kept on the long side so the
+                          // base's slot wall is sure to fit behind the lip.
 
 // ---------------- fit ----------------
 // The T-rail slides into a T-slot in the tree base. These print slightly smaller
@@ -37,7 +39,7 @@ neck_th_p   = neck_thickness - clearance;
 lip_len_p   = lip_length     - clearance;
 neck_len_p  = neck_length    + clearance;   // longer, so the base's slot wall fits behind the lip
 rail_w_p    = rail_width     - clearance;
-body_start  = lip_length + neck_length;     // 5.6: the body starts here either way
+body_start  = lip_length + neck_length;     // 6.6: the body starts here either way
 z_mid       = plug_thickness / 2;           // rail is centred on the plug's thickness
 chamfer     = 0.5;                          // eases the rail ends into the slot
 

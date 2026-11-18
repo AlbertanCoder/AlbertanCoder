@@ -20,6 +20,7 @@ Public Library makerspace.
   - `christmas-tree-leg.stl`: the full leg (print this).
   - `fit-test-plug-end.stl`: only the first 15 mm (T-rail + a bit of body), about 7 g, to test the fit first.
   - `christmas-tree-leg.scad`: source. Every size is a named number at the top.
+  - `dimensions.png`: dimensioned drawing of every size.
   - `preview.png`: model outline over the photo, plus top, side, 3/4 and T-rail views.
   - `README.md`: sizes, print settings, cost.
 
@@ -40,7 +41,7 @@ Public Library makerspace.
 | Width at halfway | about 27 |
 | Thickness at plug / tip | 15.5 / 7.5 (flat bottom, top face tapers) |
 | Floor tip | turns down about 5 mm below the straight bottom edge |
-| T-rail (across plug end) | 48.5 long; lip 9.8 thick × 2.4 deep; neck 3.3 thick × 3.2 long |
+| T-rail (across plug end) | 48.5 long; lip 9.8 thick × 2.2 deep; neck 3.3 thick × 4.4 long |
 | Clearance | 0.3 (lip/neck thinner, lip shallower, neck longer) |
 
 - The "T" is a **T-shaped rail** across the whole plug end that slides into a T-slot in the tree base. It is NOT a
