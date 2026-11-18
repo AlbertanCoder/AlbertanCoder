@@ -21,7 +21,6 @@ Public Library makerspace.
   - `fit-test-plug-end.stl`: only the first 15 mm (T-rail + a bit of body), about 7 g, to test the fit first.
   - `christmas-tree-leg.scad`: source. Every size is a named number at the top.
   - `dimensions.png`: dimensioned drawing of every size.
-  - `preview.png`: model outline over the photo, plus top, side, 3/4 and T-rail views.
   - `README.md`: sizes, print settings, cost.
 
 **Not done yet:**
@@ -36,18 +35,19 @@ Public Library makerspace.
 
 | Size (mm) | Value |
 |---|---|
-| Total length (T-rail face to floor tip) | 183 |
+| Total length (T-rail face to floor tip) | 181 |
 | Plug width | 50 |
 | Width at halfway | about 27 |
-| Thickness at plug / tip | 15.5 / 7.5 (flat bottom, top face tapers) |
+| Thickness at plug / tip | 15 / 7.2 (flat bottom, top face tapers) |
 | Floor tip | turns down about 5 mm below the straight bottom edge |
-| T-rail (across plug end) | 48.5 long; lip 9.8 thick × 2.2 deep; neck 3.3 thick × 4.4 long |
+| T-rail (across plug end) | 47.5 long (0.5 in from straight edge); lip 9.6 thick × 2.0 deep; neck 3.2 thick × 4.4 long |
 | Clearance | 0.3 (lip/neck thinner, lip shallower, neck longer) |
 
 - The "T" is a **T-shaped rail** across the whole plug end that slides into a T-slot in the tree base. It is NOT a
   small tab. An older plan had it as an 18 mm tab, which was wrong.
-- Corrected from the older plan: length 190→183, plug width 48→50, plug thickness 12→15.5, tip thickness 5→7.5,
+- Corrected from the older plan: length 190→181, plug width 48→50, plug thickness 12→15, tip thickness 5→7.2,
   halfway width 32→27.
+- Sizes were read twice, independently (two separate passes over the photos), and reconciled.
 - Accuracy from photos is about ±1 mm. That's why there's a fit test.
 
 ## Print settings
@@ -57,7 +57,7 @@ Public Library makerspace.
 - **Supports: "Support on build plate only".** The T-rail lip sits about 3 mm above the bed. Snap the support off and
   clean the rail with a knife or sandpaper.
 - Brim optional (helps the narrow tip).
-- Estimated full leg: about 43–46 g, about $4.50 at EPL's $0.10/g (GST included). Fit test: about 7 g, under $1.
+- Estimated full leg: about 41–45 g, about $4.30 at EPL's $0.10/g (GST included). Fit test: about 6–7 g, under $1.
 
 ## If the fit test doesn't fit
 

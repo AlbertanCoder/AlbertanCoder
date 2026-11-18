@@ -8,22 +8,25 @@
 // What v2 changed from v1 (after measuring the photos):
 //   * The "T" is a T-shaped RAIL that runs across the whole plug end (about 48.5 mm),
 //     not a small 18 mm tab. Seen from the side it is a lip (bar) on a thin neck (stem).
-//   * Length 183 (was 190), plug width 50 (was 48), plug thickness 15.5 (was 12),
-//     tip thickness 7.5 (was 5), width at halfway about 27 (was 32).
+//   * Length 181 (was 190), plug width 50 (was 48), plug thickness 15 (was 12),
+//     tip thickness 7.2 (was 5), width at halfway about 27 (was 32).
+//   * v2.1: checked against a second, independent read of the photos; T-rail sizes
+//     averaged and rounded to the side that slides in more easily.
 //   * The outline was traced from the top-view photo, so the curved top edge and the
 //     downturned floor tip follow the real leg instead of a straight-line guess.
 
 // ---------------- measured values ----------------
-total_length    = 183;    // T-rail outer face to floor tip
+total_length    = 181;    // T-rail outer face to floor tip (two readings: 183 and 180)
 plug_width      = 50;     // width of the body at the plug end
-plug_thickness  = 15.5;   // body thickness at the plug end
-tip_thickness   = 7.5;    // body thickness at the floor tip
+plug_thickness  = 15;     // body thickness at the plug end
+tip_thickness   = 7.2;    // body thickness at the floor tip
 
 // T-rail on the plug end face (cross-section is a T when you look at the side edge)
-rail_width      = 48.5;   // how far the rail runs across the plug (slightly less than plug_width)
-lip_thickness   = 9.8;    // the T's crossbar, measured in the thickness (z) direction
-lip_length      = 2.2;    // the crossbar's depth along x
-neck_thickness  = 3.3;    // the T's stem, in z
+rail_width      = 47.5;   // how far the rail runs across the plug
+rail_offset     = 0.5;    // rail starts this far in from the straight bottom edge (about 2 mm in from the curved side)
+lip_thickness   = 9.6;    // the T's crossbar, measured in the thickness (z) direction (0.64 x body)
+lip_length      = 2.0;    // the crossbar's depth along x
+neck_thickness  = 3.2;    // the T's stem, in z (0.21 x body)
 neck_length     = 4.4;    // the stem's length along x (gap between lip and body).
                           // Read 3.0-4.8 across photos; kept on the long side so the
                           // base's slot wall is sure to fit behind the lip.
@@ -67,10 +70,15 @@ outline = [
     [body_start, plug_width - 1.2]
 ];
 
+// The outline was traced at 183 mm overall; stretch it along x to total_length.
+outer_traced = 183;
+outline_scaled = [for (p = outline)
+    [body_start + (p[0] - body_start) * (total_length - body_start) / (outer_traced - body_start), p[1]]];
+
 // ---------------- parts ----------------
 module body() {
     intersection() {
-        linear_extrude(height = plug_thickness) polygon(outline);
+        linear_extrude(height = plug_thickness) polygon(outline_scaled);
         // thickness wedge: full thickness at the plug, thinner at the tip (top face slopes)
         translate([0, 60, 0]) rotate([90, 0, 0])
             linear_extrude(height = 80)
@@ -82,7 +90,7 @@ module body() {
 
 // a box along y with chamfered ends (x0..x1, centred in z on z_mid)
 module rail_piece(x0, x1, th) {
-    y0 = (plug_width - rail_w_p) / 2;
+    y0 = rail_offset + clearance / 2;
     hull() {
         translate([x0, y0 + chamfer, z_mid - th/2]) cube([x1 - x0, rail_w_p - 2*chamfer, th]);
         translate([x0, y0, z_mid - th/2 + chamfer]) cube([x1 - x0, rail_w_p, th - 2*chamfer]);
